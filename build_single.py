@@ -163,12 +163,18 @@ def build():
                "  var _txt=_t?_t.toLocaleString('zh-CN')\n"
                "    :((d&&d.buildDate)?String(d.buildDate)\n"
                "      :((d&&d.rows&&d.rows.length)?String(d.rows[d.rows.length-1][1]):'未知'));\n"
-               "  var s='<div class=\"upd\">数据更新于 '+_txt+'</div>';")
+               "  /* 当前时间：取访客本机时间，每次渲染刷新 */\n"
+               "  var _n=new Date();\n"
+               "  var _p=function(x){return (x<10?'0':'')+x;};\n"
+               "  var _now=_p(_n.getMonth()+1)+'-'+_p(_n.getDate())+' '\n"
+               "          +_p(_n.getHours())+':'+_p(_n.getMinutes())+':'+_p(_n.getSeconds());\n"
+               "  var s='<div class=\"upd\">数据更新于 '+_txt+'（构建时刻）'\n"
+               "    +' · 当前时间 '+_now+'</div>';")
     if old_upd in html:
         html = html.replace(old_upd, new_upd, 1)
-        log("  已修复「数据更新于」日期兜底")
+        log("  已改为：构建时刻 + 当前时间")
     else:
-        log("  [警告] 未匹配到 upd 区块，日期兜底未注入")
+        log("  [警告] 未匹配到 upd 区块，日期改动未注入")
 
     # 兜底：若 3 秒后仍停在 loading，直接用内嵌数据强制渲染
     html = html.replace(
