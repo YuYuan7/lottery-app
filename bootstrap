@@ -1,0 +1,19 @@
+#!/bin/bash
+# 阿里云函数计算 FC · Custom Runtime 启动脚本
+# 文件名必须是 bootstrap（无扩展名），且需可执行权限 chmod +x bootstrap
+export PORT=9000
+export FC_SERVER_PORT=9000
+export KEEP_ALIVE=900
+export PYTHONPATH="/code:/code/third_party:$PYTHONPATH"
+export PYTHONUNBUFFERED=1
+
+# /tmp 是唯一可靠可写目录（实例回收后清空，仅作运行期缓存）
+export LOTTERY_CACHE_DIR=/tmp/lottery_cache
+export LOTTERY_TTL=${LOTTERY_TTL:-21600}
+export LOTTERY_WORKERS=${LOTTERY_WORKERS:-10}
+
+exec python3 -m uvicorn main:app \
+  --host 0.0.0.0 \
+  --port ${PORT} \
+  --timeout-keep-alive ${KEEP_ALIVE} \
+  --log-level info

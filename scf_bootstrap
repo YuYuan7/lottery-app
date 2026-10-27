@@ -1,0 +1,27 @@
+#!/bin/bash
+# 腾讯云 SCF / CloudBase HTTP 云函数 启动脚本
+# 文件名必须是 scf_bootstrap，权限 755 / 777，且必须以 LF 换行结尾
+export PORT=9000
+export KEEP_ALIVE=900
+export PYTHONPATH="/var/user:/var/user/third_party:$PYTHONPATH"
+export PYTHONUNBUFFERED=1
+
+# SCF 环境只有 /tmp 可写
+export LOTTERY_CACHE_DIR=/tmp/lottery_cache
+export LOTTERY_TTL=${LOTTERY_TTL:-21600}
+export LOTTERY_WORKERS=${LOTTERY_WORKERS:-10}
+
+# 优先用平台自带的 python3
+if [ -f "/var/lang/python39/bin/python3.9" ]; then
+  PYBIN=/var/lang/python39/bin/python3.9
+elif [ -f "/var/lang/python37/bin/python3" ]; then
+  PYBIN=/var/lang/python37/bin/python3
+else
+  PYBIN=$(which python3)
+fi
+
+exec ${PYBIN} -m uvicorn main:app \
+  --host 0.0.0.0 \
+  --port ${PORT} \
+  --timeout-keep-alive ${KEEP_ALIVE} \
+  --log-level info

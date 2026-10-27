@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: lottery-query
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/ping
+    envVars:
+      - key: LOTTERY_TTL
+        value: 21600
+      - key: LOTTERY_WORKERS
+        value: "10"

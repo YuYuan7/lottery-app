@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app.py": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
+  "env": {
+    "LOTTERY_TTL": "21600",
+    "LOTTERY_WORKERS": "10"
+  }
+}
