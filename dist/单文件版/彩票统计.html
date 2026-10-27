@@ -284,7 +284,7 @@ function ensure(lot){
 function showLoading(){
   var n = S.lot==='ssq'?'双色球':'大乐透';
   $('main').innerHTML='<div class="card"><div class="state"><div class="spin"></div>'
-    +'正在加载'+n+'数据…<br><span style="font-size:12px;color:#aaa">'+(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD?'数据已内置于本页面，无需联网':'首次加载需从官方接口抓取，请稍候')+'</span></div></div>';
+    +'正在加载'+n+'开奖数据…<br><span style="font-size:12px;color:#aaa">'+(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD?'请稍候':'首次加载需从官方接口抓取，请稍候')+'</span></div></div>';
 }
 function showError(msg){
   $('main').innerHTML='<div class="card"><div class="state err">数据获取失败<br>'
@@ -864,8 +864,7 @@ function head(){
   var _txt=_t?_t.toLocaleString('zh-CN')
     :((d&&d.buildDate)?String(d.buildDate)
       :((d&&d.rows&&d.rows.length)?String(d.rows[d.rows.length-1][1]):'未知'));
-  var s='<div class="upd">数据更新于 '+_txt
-    +(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD?'（数据已内置于本页面，无需联网）':((d&&d.source==='live')?'（实时抓取）':'（缓存）'))+'</div>';
+  var s='<div class="upd">数据更新于 '+_txt+'</div>';
   if(d.stale) s+='<div class="card"><div class="warn">当前为上次缓存数据（官方接口暂时不可用），稍后会自动恢复实时。</div></div>';
   return s;
 }

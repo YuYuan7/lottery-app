@@ -135,9 +135,9 @@ def build():
 
     old_tip = ('\'正在获取\'+n+\'最新开奖数据…<br><span style="font-size:12px;color:#aaa">'
                '首次加载需从官方接口抓取，请稍候</span>')
-    new_tip = ('\'正在加载\'+n+\'数据…<br><span style="font-size:12px;color:#aaa">'
+    new_tip = ('\'正在加载\'+n+\'开奖数据…<br><span style="font-size:12px;color:#aaa">'
                '\'+(typeof EMBEDDED_BUILD!==\'undefined\'&&EMBEDDED_BUILD'
-               '?\'数据已内置于本页面，无需联网\':\'首次加载需从官方接口抓取，请稍候\')+\'</span>')
+               '?\'请稍候\':\'首次加载需从官方接口抓取，请稍候\')+\'</span>')
     if old_tip in html:
         html = html.replace(old_tip, new_tip, 1)
         log("  加载提示文案已改为自适应")
@@ -149,7 +149,7 @@ def build():
         "正在获取'+n+'最新开奖数据…<br><span style=\"font-size:12px;color:#aaa\">"
         "首次加载需从官方接口抓取，请稍候</span>",
         "正在加载'+n+'开奖数据…<br><span style=\"font-size:12px;color:#aaa\">"
-        "数据已内置于本页面，无需联网</span>", 1)
+        "请稍候</span>", 1)
 
     # 修「数据更新于 Invalid Date」：前端加兜底。
     # 任何情况下 updatedAt 缺失/非法，都退回用「最新一期的开奖日期」显示。
@@ -163,9 +163,7 @@ def build():
                "  var _txt=_t?_t.toLocaleString('zh-CN')\n"
                "    :((d&&d.buildDate)?String(d.buildDate)\n"
                "      :((d&&d.rows&&d.rows.length)?String(d.rows[d.rows.length-1][1]):'未知'));\n"
-               "  var s='<div class=\"upd\">数据更新于 '+_txt\n"
-               "    +(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD"
-               "?'（数据已内置于本页面，无需联网）':((d&&d.source==='live')?'（实时抓取）':'（缓存）'))+'</div>';")
+               "  var s='<div class=\"upd\">数据更新于 '+_txt+'</div>';")
     if old_upd in html:
         html = html.replace(old_upd, new_upd, 1)
         log("  已修复「数据更新于」日期兜底")
