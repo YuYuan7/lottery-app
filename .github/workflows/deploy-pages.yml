@@ -1,0 +1,57 @@
+name: 部署到 GitHub Pages
+
+# 把 dist/单文件版/彩票统计.html 发布成 index.html，
+# 得到一个可以直接分享的网址：
+#   https://<用户名>.github.io/lottery-app/
+#
+# 触发时机：
+#   1. 数据刷新工作流提交了更新（dist/单文件版 变了）
+#   2. 手动点 Run workflow
+#
+# 注意：只有当「单文件版真的变了」才触发，
+#       避免每天因为心跳提交而重复部署。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dist/单文件版/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 准备发布目录
+        run: |
+          mkdir -p _site
+          # 单文件版（数据已内嵌，零额外请求）直接作为首页
+          cp "dist/单文件版/彩票统计.html" _site/index.html
+          ls -lh _site/
+          # 顺手校验：确认数据确实内嵌了
+          grep -c "EMBEDDED_DATA" _site/index.html || {
+            echo "❌ 未找到内嵌数据，发布中止"; exit 1; }
+
+      - name: 上传产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: 发布
+        id: deployment
+        uses: actions/deploy-pages@v4
