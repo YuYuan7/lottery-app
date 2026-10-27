@@ -14,6 +14,8 @@
 import os
 import sys
 import json
+import time
+import datetime
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 OUTDIR = os.path.join(BASE, "dist", "单文件版")
@@ -58,6 +60,20 @@ def build():
     for lot in ("ssq", "dlt"):
         payload[lot] = json.load(
             open(os.path.join(DATA, lot + ".json"), encoding="utf-8"))
+
+    # 补写 updatedAt / buildDate。
+    # 这两个字段只有后端 main.py 会写，静态构建不会，
+    # 缺了会让页面显示「数据更新于 Invalid Date」
+    # （undefined*1000 = NaN → new Date(NaN)）。
+    now = int(time.time())
+    now_str = datetime.datetime.utcfromtimestamp(now + 8 * 3600) \
+        .strftime("%Y-%m-%d %H:%M")
+    for lot in ("ssq", "dlt"):
+        d = payload[lot]
+        d["updatedAt"] = int(d.get("updatedAt") or 0) or now
+        d["buildDate"] = d.get("buildDate") or now_str
+        d["embedded"] = True
+        d["staticMode"] = True
 
     # 注入内嵌数据 + fetch 垫片（放在所有脚本之前）
     inject = ("<script>\n"
@@ -134,6 +150,27 @@ def build():
         "首次加载需从官方接口抓取，请稍候</span>",
         "正在加载'+n+'开奖数据…<br><span style=\"font-size:12px;color:#aaa\">"
         "数据已内置于本页面，无需联网</span>", 1)
+
+    # 修「数据更新于 Invalid Date」：前端加兜底。
+    # 任何情况下 updatedAt 缺失/非法，都退回用「最新一期的开奖日期」显示。
+    old_upd = ("  var d=D[S.lot], t=new Date(d.updatedAt*1000);\n"
+               "  var s='<div class=\"upd\">数据更新于 '+t.toLocaleString('zh-CN')\n"
+               "    +(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD"
+               "?'（数据已内置于本页面，无需联网）':(d.source==='live'?'（实时抓取）':'（缓存）'))+'</div>';")
+    new_upd = ("  var d=D[S.lot];\n"
+               "  var _ts=Number(d&&d.updatedAt)*1000;\n"
+               "  var _t=(_ts>0)?new Date(_ts):null;\n"
+               "  var _txt=_t?_t.toLocaleString('zh-CN')\n"
+               "    :((d&&d.buildDate)?String(d.buildDate)\n"
+               "      :((d&&d.rows&&d.rows.length)?String(d.rows[d.rows.length-1][1]):'未知'));\n"
+               "  var s='<div class=\"upd\">数据更新于 '+_txt\n"
+               "    +(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD"
+               "?'（数据已内置于本页面，无需联网）':((d&&d.source==='live')?'（实时抓取）':'（缓存）'))+'</div>';")
+    if old_upd in html:
+        html = html.replace(old_upd, new_upd, 1)
+        log("  已修复「数据更新于」日期兜底")
+    else:
+        log("  [警告] 未匹配到 upd 区块，日期兜底未注入")
 
     # 兜底：若 3 秒后仍停在 loading，直接用内嵌数据强制渲染
     html = html.replace(

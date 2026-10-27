@@ -153,6 +153,9 @@ def fetch_one(lot, crawler, poll_minutes=0, interval=90):
     body = strip(data)
     body["source"] = src
     body["count"] = len(body["rows"])
+    body["updatedAt"] = int(time.time())
+    body["buildDate"] = datetime.datetime.utcfromtimestamp(
+        time.time() + 8 * 3600).strftime("%Y-%m-%d %H:%M")
     if not body["rows"]:
         log("%s 返回空数据，跳过" % lot)
         return None

@@ -43,6 +43,10 @@ def fetch_data():
         body = strip(data)
         body["source"] = src
         body["count"] = len(body["rows"])
+        import time as _t, datetime as _dt
+        _n = int(_t.time())
+        body["updatedAt"] = _n
+        body["buildDate"] = _dt.datetime.utcfromtimestamp(_n + 8 * 3600).strftime("%Y-%m-%d %H:%M")
         with open(os.path.join(DATA, lot + ".json"), "w",
                   encoding="utf-8") as f:
             json.dump(body, f, ensure_ascii=False, separators=(",", ":"))

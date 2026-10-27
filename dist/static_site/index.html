@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8402a">
-<title>彩票查询 · 双色球 / 大乐透</title>
+<title>彩票统计（离线单文件版）· 双色球 / 大乐透</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;
@@ -758,7 +758,7 @@ function showSource(){
    +'<h4>大乐透</h4><p>中国体育彩票官方接口（lottery.sporttery.cn）。</p>'
    +'<h4>当前数据</h4><p>'+(d? esc(d.name)+'：'+d.rows.length+' 期（'+d.rows[0][0]+' ~ '+d.rows[d.rows.length-1][0]+'）'
      :'尚未加载')+'</p>'
-   +'<h4>说明</h4><p>页面本身不含任何内置数据，打开时实时抓取；服务端会缓存，'
+   +'<h4>说明</h4><p>'+(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD?'本页面为离线单文件版，开奖数据已内置在文件中，打开即用、无需联网；数据源为官方接口，构建时抓取。':'页面本身不含任何内置数据，打开时实时抓取；服务端会缓存，')
    +'再次打开秒开。若官方接口临时不可用，会回退到上次缓存并提示。</p>'
    +'</div></div></div>';
 }
@@ -827,7 +827,7 @@ function closeHelp(){ $('modal').innerHTML=''; }
 function head(){
   var d=D[S.lot], t=new Date(d.updatedAt*1000);
   var s='<div class="upd">数据更新于 '+t.toLocaleString('zh-CN')
-    +(d.source==='live'?'（实时抓取）':'（缓存）')+'</div>';
+    +(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD?'（数据已内置于本页面，无需联网）':(d.source==='live'?'（实时抓取）':'（缓存）'))+'</div>';
   if(d.stale) s+='<div class="card"><div class="warn">当前为上次缓存数据（官方接口暂时不可用），稍后会自动恢复实时。</div></div>';
   return s;
 }

@@ -75,9 +75,39 @@
 1. 仓库页面顶部 → **Settings**
 2. 左侧菜单 → **Pages**
 3. **Source** 下拉 → 选 **GitHub Actions**
-4. 点 Save
 
-⚠️ **不做这步，部署工作流会失败。**
+**选完就生效，没有要点的 Save 按钮。**
+
+> ⚠️ 页面上确实有个 Save 按钮，但它是 **Custom domain（自定义域名）**
+> 输入框的配套按钮——我们没填域名，所以它是灰的、点不了，**不用管**。
+> Source 下拉选完自动保存，看它显示 `GitHub Actions` 就是成功了。
+
+### 两件事千万别做
+
+**① 不要点页面中间的 `Configure` 按钮**
+
+```
+GitHub Pages Jekyll    [Configure]   ← 别点
+Static HTML            [Configure]   ← 别点
+```
+
+这是 GitHub 的官方模板，点了会新建 workflow 文件，跟我们自带的
+`deploy-pages.yml` 抢同一个站点，互相覆盖报冲突。
+**我们自己的部署工作流已经写好了。**
+
+**② 不要用 "Deploy from a branch"**
+
+Source 必须选 **GitHub Actions**。选 branch 那套是老式发布，
+不认我们的 workflow，部署会静默不生效。
+
+### 顺带确认仓库是 Public
+
+页面底部如果出现 **「Start free for 30 days」**，说明仓库可能是 Private
+（Pages 免费版只对 Public 开放）。检查仓库名旁边有没有 **Public** 徽章：
+
+- 有 → 继续下一步
+- 显示 Private → Settings → General → 最底部 Danger Zone
+  → Change visibility → 改 Public
 
 ---
 
@@ -85,10 +115,21 @@
 
 ### ① 跑数据刷新
 
-1. 仓库顶部 → **Actions**
-2. 左侧列表点 **「定时刷新彩票数据」**
-3. 右上 **Run workflow** → 下拉保持 `12` → 绿色 **Run workflow**
-4. 等 1~2 分钟，点进去看日志
+**进 Actions 页面（唯一确定入口，直接在地址栏输入）**：
+
+```
+https://github.com/YuYuan7/lottery-app/actions
+```
+
+> 注意是 `/actions` 结尾。进去后看到的是**工作流列表**（All workflows），
+> 左侧列着「定时刷新彩票数据」「部署到 GitHub Pages」。
+>
+> ⚠️ 左侧如果只看到 General / Runners / Policies / OIDC，
+> 那是 **Actions 的设置页**，走错了——用上面这个网址重进。
+
+1. 左侧点 **「定时刷新彩票数据」**
+2. 右上 **Run workflow** → 下拉保持 `12` → 绿色 **Run workflow**
+3. 等 1~2 分钟，点进去看日志
 
 预期看到：
 
