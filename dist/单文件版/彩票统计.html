@@ -869,7 +869,7 @@ function head(){
   var _p=function(x){return (x<10?'0':'')+x;};
   var _now=_p(_n.getMonth()+1)+'-'+_p(_n.getDate())+' '
           +_p(_n.getHours())+':'+_p(_n.getMinutes())+':'+_p(_n.getSeconds());
-  var s='<div class="upd">数据更新于 '+_txt+'（构建时刻）'
+  var s='<div class="upd">数据更新于 '+_txt
     +' · 当前时间 '+_now+'</div>';
   if(d.stale) s+='<div class="card"><div class="warn">当前为上次缓存数据（官方接口暂时不可用），稍后会自动恢复实时。</div></div>';
   return s;
