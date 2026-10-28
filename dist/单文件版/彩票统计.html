@@ -866,9 +866,12 @@ function lcWrite(lot,d){
     localStorage.setItem('lcd_'+lot, JSON.stringify(d));
     localStorage.setItem('lcst_'+lot, lcStamp(d));
   }catch(e){
-    /* 配额不足：清掉旧缓存，只留当前彩种 */
-    try{ localStorage.removeItem('lcd_'+(lot==='ssq'?'dlt':'ssq'));
-         localStorage.removeItem('lcst_'+(lot==='ssq'?'dlt':'ssq'));
+    /* 配额不足：清掉其它彩种的缓存，只留当前彩种
+       （原来只清「另一个」，四彩种后会漏清 3d / pls） */
+    try{ var _all=['ssq','dlt','3d','pls'];
+         for(var _i=0;_i<_all.length;_i++){ if(_all[_i]===lot) continue;
+           localStorage.removeItem('lcd_'+_all[_i]);
+           localStorage.removeItem('lcst_'+_all[_i]); }
          localStorage.setItem('lcd_'+lot, JSON.stringify(d));
          localStorage.setItem('lcst_'+lot, lcStamp(d)); }catch(e2){}
   }
@@ -936,7 +939,9 @@ function ensure(lot){
   });
 }
 function showLoading(){
-  var n = S.lot==='ssq'?'双色球':'大乐透';
+  /* 早期只有双色球/大乐透两个彩种，这里写成三元；加福彩3D/排列三后
+     它们会误显示「大乐透」。改用统一名称表 LOTNAME（在第 1327 行附近定义）。 */
+  var n = (typeof LOTNAME!=='undefined' && LOTNAME && LOTNAME[S.lot]) || '该彩种';
   $('main').innerHTML='<div class="card"><div class="state"><div class="spin"></div>'
     +'正在加载'+n+'开奖数据…<br><span style="font-size:12px;color:#aaa">'+(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD?'请稍候':'首次加载需从官方接口抓取，请稍候')+'</span></div></div>';
 }
@@ -1806,10 +1811,18 @@ function makeBetImage(){
     g.fillStyle='#bbb'; g.font='14px "PingFang SC",sans-serif'; g.textAlign='left';
     g.fillText('#'+(i+1), PAD-4, cy+5);
     /* 红球 */
+    var lastRedRight = x + (bet.r.length-1)*50 + 20;   /* 最后一个红球的右边缘 */
     for(var j=0;j<bet.r.length;j++){ drawImgBall(g,x,cy,20,'#e8402a',pad(bet.r[j])); x+=50; }
-    /* 加号 */
-    g.fillStyle='#999'; g.font='600 20px sans-serif'; g.textAlign='center';
-    g.fillText('+', x+8, cy+7); x+=34;
+    /* 加号：放在「最后一个红球右边缘」与「第一个蓝球左边缘」的正中间。
+       原来写死在 x+8，实测距蓝球左边缘只剩 6px，看着像蓝球的一部分。
+       这里改为按两侧边缘算中点，并留出更宽的间隔。 */
+    if(bet.b.length){
+      var blueStart = x + 46;                          /* 第一个蓝球的圆心 */
+      var plusCx = (lastRedRight + (blueStart-20)) / 2;
+      g.fillStyle='#999'; g.font='600 20px sans-serif'; g.textAlign='center';
+      g.fillText('+', plusCx, cy+7);
+      x = blueStart;
+    }
     /* 蓝球 */
     for(var k=0;k<bet.b.length;k++){ drawImgBall(g,x,cy,20,'#2b6cd4',pad(bet.b[k])); x+=50; }
     y+=LH;

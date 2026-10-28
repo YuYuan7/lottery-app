@@ -29,7 +29,11 @@ app.add_middleware(
 )
 
 META_KEYS = ("name", "redMax", "blueMax", "redCount", "blueCount",
-             "redLabel", "blueLabel")
+             "redLabel", "blueLabel",
+             # 福彩3D / 排列三：按位玩法标记与位名，缺了前端会按双色球渲染
+             "positional", "posLabels", "minNum",
+             # 奖池 / 销量 / 浮动奖实际奖金 / 福运奖
+             "pool")
 
 
 def strip(obj):
@@ -47,9 +51,13 @@ def ping():
 
 
 @app.get("/api/history")
-def history(lot: str = Query("ssq", pattern="^(ssq|dlt)$"),
+def history(lot: str = Query("ssq", pattern="^(ssq|dlt|3d|pls)$"),
             force: int = 0):
-    """返回某彩种全部历史开奖数据（前端据此做统计与走势）"""
+    """返回某彩种全部历史开奖数据（前端据此做统计与走势）
+
+    lot: ssq=双色球 / dlt=大乐透 / 3d=福彩3D / pls=排列三
+    早期版本只放行 ssq|dlt，导致福彩3D、排列三在后端模式下返回 400。
+    """
     try:
         data, src = crawler.get_data_safe(lot, force=bool(force))
     except Exception as e:                       # noqa

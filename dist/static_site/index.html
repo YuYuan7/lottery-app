@@ -807,9 +807,12 @@ function lcWrite(lot,d){
     localStorage.setItem('lcd_'+lot, JSON.stringify(d));
     localStorage.setItem('lcst_'+lot, lcStamp(d));
   }catch(e){
-    /* 配额不足：清掉旧缓存，只留当前彩种 */
-    try{ localStorage.removeItem('lcd_'+(lot==='ssq'?'dlt':'ssq'));
-         localStorage.removeItem('lcst_'+(lot==='ssq'?'dlt':'ssq'));
+    /* 配额不足：清掉其它彩种的缓存，只留当前彩种
+       （原来只清「另一个」，四彩种后会漏清 3d / pls） */
+    try{ var _all=['ssq','dlt','3d','pls'];
+         for(var _i=0;_i<_all.length;_i++){ if(_all[_i]===lot) continue;
+           localStorage.removeItem('lcd_'+_all[_i]);
+           localStorage.removeItem('lcst_'+_all[_i]); }
          localStorage.setItem('lcd_'+lot, JSON.stringify(d));
          localStorage.setItem('lcst_'+lot, lcStamp(d)); }catch(e2){}
   }
@@ -867,7 +870,9 @@ function ensure(lot){
   });
 }
 function showLoading(){
-  var n = S.lot==='ssq'?'双色球':'大乐透';
+  /* 早期只有双色球/大乐透两个彩种，这里写成三元；加福彩3D/排列三后
+     它们会误显示「大乐透」。改用统一名称表 LOTNAME（在第 1327 行附近定义）。 */
+  var n = (typeof LOTNAME!=='undefined' && LOTNAME && LOTNAME[S.lot]) || '该彩种';
   $('main').innerHTML='<div class="card"><div class="state"><div class="spin"></div>'
     +'正在获取'+n+'最新开奖数据…<br><span style="font-size:12px;color:#aaa">首次加载需从官方接口抓取，请稍候</span></div></div>';
 }
