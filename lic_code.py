@@ -79,15 +79,30 @@ def norm(code):
 
 
 def fmt(code):
-    return "-".join(code[i:i + 4] for i in range(0, 12, 4))
+    return "-".join(code[i:i + 4] for i in range(0, len(code), 4))
 
 
-def make_code(salt, expire_date):
-    """按到期日签一个码。expire_date: datetime.date 或 'YYYY-MM-DD'"""
+def dev_tag(did):
+    """设备 ID → 4 位设备标签（与页面 licDevTag 完全一致）"""
+    return b32enc(int(licH("LICDEV|" + str(did))[:5], 16), 4)
+
+
+def make_code(salt, expire_date, dev=""):
+    """按到期日签一个码。expire_date: datetime.date 或 'YYYY-MM-DD'
+    dev 为空 → 12 位通用码；dev 为 4 位设备标签 → 16 位设备绑定码"""
     if isinstance(expire_date, str):
         expire_date = datetime.date(*[int(x) for x in expire_date.split("-")])
     payload = b32enc((expire_date - EPOCH).days, 4)
     rand = _rand4()
+    dev = (dev or "").strip().upper()
+    if dev and dev != "0000":
+        sig = _sig(salt, payload + dev, rand)
+        out = [""] * 16
+        for i in range(16):
+            j = i // 4
+            out[i] = payload[j] if i % 4 == 0 else (
+                dev[j] if i % 4 == 1 else (rand[j] if i % 4 == 2 else sig[j]))
+        return fmt("".join(out))
     sig = _sig(salt, payload, rand)
     return fmt(_interleave(payload, rand, sig))
 
@@ -95,13 +110,21 @@ def make_code(salt, expire_date):
 def parse_code(salt, code):
     """校验并取回到期日。返回 (ok, expire_str, reason)"""
     c = norm(code)
-    if len(c) != 12:
+    if len(c) not in (12, 16):
         return False, "", "格式不对"
-    p, r, s = _deinterleave(c)
-    if _sig(salt, p, r) != s:
+    if len(c) == 16:
+        p = c[0] + c[4] + c[8] + c[12]
+        d = c[1] + c[5] + c[9] + c[13]
+        r = c[2] + c[6] + c[10] + c[14]
+        s = c[3] + c[7] + c[11] + c[15]
+    else:
+        p, r, s = _deinterleave(c)
+        d = "0000"
+    # 12 位码不含设备段，签名输入与签发时保持一致（不能多拼 "0000"）
+    if _sig(salt, (p + d) if len(c) == 16 else p, r) != s:
         return False, "", "校验不通过"
-    d = EPOCH + datetime.timedelta(days=b32dec(p))
-    return True, d.isoformat(), ""
+    exp = (EPOCH + datetime.timedelta(days=b32dec(p))).isoformat()
+    return True, exp, ""
 
 
 def add_days(n, unit):

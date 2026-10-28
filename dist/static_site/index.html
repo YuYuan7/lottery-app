@@ -421,7 +421,7 @@ var STATIC_BUILD = true;
    诚实说明：这是纯前端校验，能挡住拿到链接但没有授权码的人，
    但挡不住懂技术的人（HTML 源码可见，删掉校验即可绕过）。
    真要按设备数硬限制、支持随时吊销，必须有后端配合。 */
-var LICENSE = {"salt":"YDV3XFJ8X8NKJY83","expire":"2027-01-28","codes":["63b2edf6da7f84f046f99096","388312c79ac4f463fb5b0356","2adceb8711816ea86fc9b5c8","93f6ff318b583f1a4bf3e075","6e48d2bd862129e5089d9e62"],"sigSalt":"SE8DPHX8K5AKMQQZ","admin":{"user":"admin","hash":"2ff4a6734d81f1b08b143b0e"}};
+var LICENSE = {"salt":"YDV3XFJ8X8NKJY83","expire":"2026-11-28","codes":["63b2edf6da7f84f046f99096","388312c79ac4f463fb5b0356","2adceb8711816ea86fc9b5c8","93f6ff318b583f1a4bf3e075","6e48d2bd862129e5089d9e62"],"sigSalt":"SE8DPHX8K5AKMQQZ","admin":{"user":"admin","hash":"2ff4a6734d81f1b08b143b0e"}};
 function licH(s){
   /* 同步字符串散列（FNV-1a 变体，三轮不同种子），够用于授权码比对 */
   function one(str, seed){
@@ -443,6 +443,69 @@ function licFp(){
   return licH([n.userAgent, n.language, (n.platform||''), (n.hardwareConcurrency||''),
     (screen?screen.width+'x'+screen.height+'x'+(screen.colorDepth||''):''), tz].join('|'));
 }
+/* ---------- 设备 ID ----------
+   纯指纹会随浏览器升级 / 屏幕更换而变，直接拿它当身份会误伤老用户。
+   这里用「本机随机串（长期存 localStorage + cookie 双写）+ 指纹」共同派生，
+   并保留最近 3 个历史 ID：指纹变化时能平滑迁移，换设备则因没有历史记录而被拦住。 */
+function licRand(){
+  var s='', i;
+  for(i=0;i<8;i++) s+=('0000'+Math.floor(Math.random()*65536).toString(16)).slice(-4);
+  return s;
+}
+function licDidGet(){
+  var v='';
+  try{ v=localStorage.getItem('lc_did')||''; }catch(e){}
+  if(!v){
+    try{
+      var m=document.cookie.match(/(?:^|;\s*)lc_did=([^;]*)/);
+      if(m) v=decodeURIComponent(m[1]);
+    }catch(e){}
+  }
+  if(!v){
+    v=licRand();
+    try{ localStorage.setItem('lc_did', v); }catch(e){}
+    try{ document.cookie='lc_did='+encodeURIComponent(v)+';path=/;max-age=315360000'; }catch(e){}
+  }
+  return v;
+}
+function licDevId(){ return licH(licFp()+'|'+licDidGet()).slice(0,16); }
+function licDevHist(){
+  var h=[], cur=licDevId();
+  try{ h=JSON.parse(localStorage.getItem('lc_didh')||'[]'); }catch(e){ h=[]; }
+  if(!(h instanceof Array)) h=[];
+  if(h.indexOf(cur)<0){ h.unshift(cur); h=h.slice(0,3);
+    try{ localStorage.setItem('lc_didh', JSON.stringify(h)); }catch(e){} }
+  return h;
+}
+function licDevMatch(bound){
+  /* 当前 ID 或历史 ID 命中都算「同一台设备」 */
+  return !!bound && licDevHist().indexOf(bound)>=0;
+}
+/* ---------- 云端登记表（可选）----------
+   LICENSE.regUrl 指向一个公共 JSON 存储，里面记着「码 → 设备 ID」。
+   激活时查表：这个码若已被别的设备占用就拒绝，从根上做到一码一机。
+   诚实说明：地址内嵌在页面里，能挡住「一个码发给多个人各自激活」，
+   挡不住扒源码清空登记表的人。要不可伪造必须上私有后端。 */
+function regUrl(){
+  try{ return (LICENSE && (LICENSE.regUrl||'')) || ''; }catch(e){ return ''; }
+}
+function regFetch(url, method, body){
+  var opt={method:method, cache:'no-store', headers:{}};
+  if(body!==undefined){ opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(body); }
+  var ctrl = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  if(ctrl){ opt.signal=ctrl.signal; var t=setTimeout(function(){ ctrl.abort(); }, 12000); }
+  function done(j){ if(ctrl) clearTimeout(t); return j; }
+  return fetch(url, opt).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(done, function(e){ if(ctrl) clearTimeout(t); throw e; });
+}
+function regGet(){ return regFetch(regUrl(),'GET').then(function(j){
+  if(!j || typeof j!=='object') return {v:1,bind:{}};
+  if(!j.bind || typeof j.bind!=='object') j.bind={};
+  return j;
+}); }
+function regPut(j){ return regFetch(regUrl(),'PUT',j); }
 function licToday(){
   var d=new Date(), p=function(n){return ('0'+n).slice(-2)};
   return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
@@ -461,28 +524,61 @@ function licSigSalt(){ return (LICENSE&&LICENSE.sigSalt)||''; }
 function licSig(pay,rnd){
   return b32enc(parseInt(licH(licSigSalt()+'|'+pay+'|'+rnd).slice(0,5),16),4);
 }
+/* ---------- 设备绑定码（16 位，不需要任何外部服务）----------
+   原理：把「设备标签」直接写进授权码里。锁屏页会显示本机设备码（4 位），
+   用户把它报给管理员，管理员签发时填入，生成的码就只认这一台设备。
+   换设备、换浏览器都激活不了 —— 全程离线，不依赖第三方服务。
+   12 位的旧码不含设备标签，仍可在任意设备使用（保持兼容）。 */
+function licDevTag(did){
+  return b32enc(parseInt(licH('LICDEV|'+(did||licDevId())).slice(0,5),16),4);
+}
+function licDevShow(){ return licDevTag(licDevId()); }
+function licDevTagOk(tag){
+  if(!tag || tag==='0000') return true;          /* 未绑定设备的通用码 */
+  var h=licDevHist(), i;
+  for(i=0;i<h.length;i++){ if(licDevTag(h[i])===tag) return true; }
+  return false;
+}
 function licNorm(c){
   if(!c) return '';
   c=String(c).toUpperCase().replace(/[-\s]/g,'').replace(/O/g,'0').replace(/I/g,'1').replace(/L/g,'1');
   var o=''; for(var i=0;i<c.length;i++){ if(B32.indexOf(c[i])>=0) o+=c[i]; }
   return o;
 }
-function licFmt(c){ return c.slice(0,4)+'-'+c.slice(4,8)+'-'+c.slice(8,12); }
+function licFmt(c){
+  c=String(c||''); var o=[], i;
+  for(i=0;i<c.length;i+=4) o.push(c.substr(i,4));
+  return o.join('-');
+}
 function licRand4(){ var s=''; for(var i=0;i<4;i++) s+=B32[Math.floor(Math.random()*32)]; return s; }
-function licMake(exp){
+/* dev 为空 → 12 位通用码；dev 为 4 位设备标签 → 16 位设备绑定码 */
+function licMake(exp, dev){
   var p=String(exp).split('-');
   var days=Math.round((Date.UTC(+p[0],+p[1]-1,+p[2])-LIC_EPOCH)/86400000);
-  var pay=b32enc(days,4), rnd=licRand4(), sg=licSig(pay,rnd), out='';
-  for(var i=0;i<12;i++){ var j=Math.floor(i/3); out+=(i%3===0)?pay[j]:((i%3===1)?rnd[j]:sg[j]); }
+  var pay=b32enc(days,4), rnd=licRand4(), out='';
+  if(dev && dev!=='0000'){
+    var sg=licSig(pay+dev, rnd), i, j;
+    for(i=0;i<16;i++){ j=Math.floor(i/4);
+      out += (i%4===0)?pay[j]:((i%4===1)?dev[j]:((i%4===2)?rnd[j]:sg[j])); }
+    return out;
+  }
+  var sg0=licSig(pay,rnd), k, m;
+  for(k=0;k<12;k++){ m=Math.floor(k/3); out+=(k%3===0)?pay[m]:((k%3===1)?rnd[m]:sg0[m]); }
   return out;
 }
 function licParse(code){
-  var c=licNorm(code);
-  if(c.length!==12) return {ok:false,why:'授权码格式不对（应为 12 位）'};
-  var pay=c[0]+c[3]+c[6]+c[9], rnd=c[1]+c[4]+c[7]+c[10], sg=c[2]+c[5]+c[8]+c[11];
-  if(licSig(pay,rnd)!==sg) return {ok:false,why:'授权码无效，请核对后重试'};
+  var c=licNorm(code), n=c.length;
+  if(n!==12 && n!==16) return {ok:false,why:'授权码格式不对（应为 12 位或 16 位）'};
+  var pay,rnd,sg,dev='0000';
+  if(n===16){
+    pay=c[0]+c[4]+c[8]+c[12]; dev=c[1]+c[5]+c[9]+c[13];
+    rnd=c[2]+c[6]+c[10]+c[14]; sg=c[3]+c[7]+c[11]+c[15];
+  }else{
+    pay=c[0]+c[3]+c[6]+c[9]; rnd=c[1]+c[4]+c[7]+c[10]; sg=c[2]+c[5]+c[8]+c[11];
+  }
+  if(licSig(pay+((n===16)?dev:''),rnd)!==sg) return {ok:false,why:'授权码无效，请核对后重试'};
   var d=new Date(LIC_EPOCH+b32dec(pay)*86400000), q=function(n){return ('0'+n).slice(-2)};
-  return {ok:true,expire:d.getUTCFullYear()+'-'+q(d.getUTCMonth()+1)+'-'+q(d.getUTCDate())};
+  return {ok:true,expire:d.getUTCFullYear()+'-'+q(d.getUTCMonth()+1)+'-'+q(d.getUTCDate()),dev:dev};
 }
 /* 按 (数量,单位) 算到期日；月/年按日历推进，1月31日+1个月=2月28/29日 */
 function admExpire(val,unit){
@@ -523,12 +619,48 @@ function admShowPanel(){
   var h='<div class="mh">管理员<span onclick="closeHelp()">×</span></div><div class="mb">';
   h+='<p style="font-size:13.5px;margin:0 0 14px">已登录：<b style="color:var(--brand)">'+esc(a.user||'admin')+'</b></p>';
   h+='<div class="btns" style="margin-bottom:14px">'
-    +'<button class="g" onclick="admShowLogin()">重新登录</button></div>';
+    +'<button class="g" onclick="admShowLogin()">重新登录</button>'
+    +(regUrl()?'<button class="g" onclick="admReg()">授权登记</button>':'')+'</div>';
   h+='<div class="note" style="padding:10px 0 0">登录状态只在当前标签页有效，'
     +'关掉页面即退出。<br>要签发授权码，请从菜单里点<b>「生成授权码」</b>。</div>';
   h+='<div class="btns" style="margin-top:12px"><button class="delbtn" onclick="admLogout()">退出管理员</button></div>';
   h+='</div>';
   $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'+h+'</div></div>';
+}
+/* ---------- 授权登记管理（管理员解绑设备用）----------
+   用户换手机、清了浏览器数据后，旧绑定会拦住他。管理员在这里解绑即可。 */
+function admReg(){
+  var h='<div class="mh">授权登记<span onclick="closeHelp()">×</span></div><div class="mb">';
+  h+='<div id="reg-body"><div style="font-size:13px;color:var(--fg7)">正在读取登记表…</div></div>';
+  h+='<div class="btns" style="margin-top:12px"><button class="g" onclick="admShowPanel()">返回</button></div></div>';
+  $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'+h+'</div></div>';
+  admRegLoad();
+}
+function admRegLoad(){
+  var box=$('reg-body'); if(!box) return;
+  regGet().then(function(j){
+    var ks=Object.keys(j.bind||{});
+    if(!ks.length){ box.innerHTML='<div class="note" style="padding:8px 0">'
+      +'还没有任何设备激活过。用户首次激活后会自动登记到这里。</div>'; return; }
+    var h='<div class="note" style="padding:8px 0">已绑定 <b>'+ks.length+'</b> 个授权码，一个码对应一台设备。</div>';
+    ks.forEach(function(k){
+      var b=j.bind[k]||{};
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--bd)">'
+        +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+esc(licFmt(k))+'</div>'
+        +'<div style="font-size:11.5px;color:var(--fg7)">设备 '+esc(String(b.dev||'').slice(0,8))
+        +' · 激活于 '+esc(b.at||'-')+'</div></div>'
+        +'<button class="delbtn" onclick="admRegUnbind(\''+esc(k)+'\')">解绑</button></div>';
+    });
+    box.innerHTML=h;
+  }, function(){
+    box.innerHTML='<div class="e">读取失败，请检查网络后重试</div>';
+  });
+}
+function admRegUnbind(k){
+  regGet().then(function(j){
+    if(j.bind[k]){ delete j.bind[k]; return regPut(j); }
+  }).then(function(){ toast('已解绑，该码可在新设备激活'); admRegLoad(); },
+          function(){ toast('解绑失败，请检查网络'); });
 }
 function admShowLogin(){
   var h='<div class="mh">管理员登录<span onclick="closeHelp()">×</span></div><div class="mb">';
@@ -606,6 +738,16 @@ function admShowGen(){
     +'border:1px solid var(--bd2);border-radius:8px;background:var(--surface);color:var(--fg)">';
   for(var n=1;n<=20;n++) h+='<option value="'+n+'"'+(S.admN===n?' selected':'')+'>'+n+' 个</option>';
   h+='</select>';
+  h+='<div style="font-size:13px;font-weight:600;margin-bottom:8px">设备绑定（可选）</div>';
+  h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">'
+    +'<input id="adm-dev" type="text" maxlength="4" placeholder="设备码" value="'+esc(S.admDev)+'" '
+    +'oninput="S.admDev=this.value.toUpperCase()" '
+    +'style="width:96px;padding:9px 10px;font-size:14px;letter-spacing:2px;text-transform:uppercase;'
+    +'border:1px solid var(--bd2);border-radius:8px;background:var(--surface);color:var(--fg)"></div>';
+  h+='<div style="font-size:11.5px;color:var(--fg7);margin-bottom:12px;line-height:1.7">'
+    +'留空 = 通用码（12 位，任意设备可用）。<br>'
+    +'填入对方锁屏页显示的 4 位设备码 = <b>设备绑定码</b>（16 位），'
+    +'换设备也激活不了，且不需要联网。</div>';
   h+='<div class="btns" style="margin-bottom:12px"><button class="p" onclick="admGen()">生成</button></div>';
   h+='<div id="adm-out"></div>';
   h+='<div class="note" style="padding:10px 0 0">生成的码<b>直接发给对方即可</b>，不用重新构建或上传页面。'
@@ -618,9 +760,11 @@ function admShowGen(){
 }
 function admGen(){
   var exp=admExpire(S.admVal,S.admUnit);
+  var dev=licNorm(S.admDev||'').slice(0,4);
+  if(dev && dev.length!==4){ toast('设备码应为 4 位'); return; }
   S.admOut=[];
-  for(var i=0;i<S.admN;i++) S.admOut.push({code:licFmt(licMake(exp)), exp:exp});
-  admDrawOut(); toast('已生成 '+S.admN+' 个授权码');
+  for(var i=0;i<S.admN;i++) S.admOut.push({code:licFmt(licMake(exp,dev)), exp:exp, dev:dev});
+  admDrawOut(); toast(dev?('已生成 '+S.admN+' 个设备绑定码'):('已生成 '+S.admN+' 个授权码'));
 }
 function admDrawOut(){
   var box=$('adm-out'); if(!box) return;
@@ -689,8 +833,10 @@ function licCheck(code){
   }
   var r=licParse(c);
   if(!r.ok) return {ok:false, why:r.why};
+  if(!licDevTagOk(r.dev))
+    return {ok:false, why:'该授权码已绑定其他设备，无法在本机激活（本机设备码 '+licDevShow()+'）'};
   if(licToday()>r.expire) return {ok:false, why:'该授权码已于 '+r.expire+' 到期，请联系管理员续期'};
-  return {ok:true, expire:r.expire};
+  return {ok:true, expire:r.expire, dev:r.dev};
 }
 function licActivate(){
   var el=$('lic-in'), code=((el&&el.value)||'').trim().toUpperCase();
@@ -699,11 +845,69 @@ function licActivate(){
   if(!code){ say('请输入授权码'); return; }
   var r=licCheck(code);
   if(!r.ok){ say(r.why||'授权码无效，请核对后重试'); return; }
-  licSet({code:code, key:licH(LICENSE.salt+'|'+code+'|'+licFp()), at:Date.now(), exp:r.expire||''});
-  licInitMenu(); boot();
+  var dev=licDevId();
+  var save=function(){
+    licSet({code:code, dev:dev, key:licH(LICENSE.salt+'|'+code+'|'+licFp()),
+            at:Date.now(), exp:r.expire||''});
+    licInitMenu(); boot();
+  };
+  if(!regUrl()){ save(); return; }      /* 未配置登记表：仅本机绑定 */
+  say('正在验证，请稍候…','');
+  regGet().then(function(j){
+    var b=j.bind[licNorm(code)];
+    if(b && !licDevMatch(b.dev)){
+      say('该授权码已在另一台设备激活（'+(b.at||'')+'），一个授权码只能绑定一台设备。'
+          +'如需换机请联系管理员解绑。');
+      return;
+    }
+    if(!b){
+      /* 重新读一次再写，尽量降低两设备同时激活时的覆盖概率 */
+      return regGet().then(function(j2){
+        var b2=j2.bind[licNorm(code)];
+        if(b2 && !licDevMatch(b2.dev)){
+          say('该授权码已在另一台设备激活（'+(b2.at||'')+'），一个授权码只能绑定一台设备。');
+          return;
+        }
+        j2.bind[licNorm(code)]={dev:dev, at:licToday()};
+        return regPut(j2).then(save, function(){
+          say('无法写入授权登记，请检查网络后重试');
+        });
+      });
+    }
+    save();
+  }, function(){
+    /* 连不上登记表：本机此前已用同码激活过才放行，否则必须联网 */
+    var o=licGet();
+    if(o && o.code===code && o.dev && licDevMatch(o.dev)){ save(); return; }
+    say('无法连接授权服务器，请联网后重试（首次激活必须联网）');
+  });
+}
+/* 已激活用户每次打开时复查：若登记表中该码已归别的设备（管理员解绑后他人占用），就地锁定 */
+function licRecheck(){
+  if(!regUrl() || licBlocked()) return;
+  var o=licGet(); if(!o || !o.code) return;
+  regGet().then(function(j){
+    var b=j.bind[licNorm(o.code)];
+    if(b && !licDevMatch(b.dev)){
+      try{ localStorage.removeItem('lc_lic'); }catch(e){}
+      licInitMenu(); render();
+      toast('该授权码已在另一台设备激活，本机已退出');
+    }else if(!b){
+      /* 管理员清空过登记表，补登回来，避免老用户被误锁 */
+      j.bind[licNorm(o.code)]={dev:licDevId(), at:licToday()};
+      regPut(j)['catch'](function(){});
+    }
+  }, function(){});       /* 离线时静默放行，不打扰正常使用 */
 }
 function licDeactivate(){
+  var o=licGet();
   try{ localStorage.removeItem('lc_lic'); }catch(e){}
+  /* 主动解绑：把登记表中自己的记录删掉，这个码就能换到别的设备用 */
+  if(o && o.code && regUrl()){
+    regGet().then(function(j){
+      if(j.bind[licNorm(o.code)]){ delete j.bind[licNorm(o.code)]; regPut(j)['catch'](function(){}); }
+    }, function(){});
+  }
   licInitMenu(); render();
 }
 function licCopyCode(){
@@ -735,6 +939,11 @@ function renderLock(){
     +'background:var(--surface);color:var(--fg);text-transform:uppercase" '
     +'onkeydown="if(event.key===\'Enter\')licActivate()"></div>';
   h+='<div id="lic-msg" class="msg"></div>';
+  if(LICENSE){
+    h+='<div style="margin-top:14px;font-size:12px;color:#999;line-height:1.7">'
+      +'本机设备码 <b style="color:var(--brand);letter-spacing:1px">'+esc(licDevShow())+'</b><br>'
+      +'管理员可凭它签发<b>只认这台设备</b>的授权码</div>';
+  }
   h+='<div style="margin-top:14px"><button class="p" style="min-width:120px" '
     +'onclick="licActivate()">激活</button></div>';
   h+='</div>';
@@ -761,7 +970,7 @@ var S = {noApi:STATIC_BUILD, lot:'ssq', tab:'list',
   /* 复式 / 胆拖 */
   fsMode:'fushi', fsRed:[], fsBlue:[], fsDan:[], fsTuo:[],
   /* 管理员签发授权码 */
-  admUnit:'month', admVal:3, admN:1, admOut:[]};
+  admUnit:'month', admVal:3, admN:1, admOut:[], admDev:''};
 
 function $(id){return document.getElementById(id)}
 /* 期号短标：双色球 2026122→26122，大乐透 26121→26121，统一 5 位，避免两者混淆 */
@@ -1742,10 +1951,18 @@ function makeBetImage(){
     g.fillStyle='#bbb'; g.font='14px "PingFang SC",sans-serif'; g.textAlign='left';
     g.fillText('#'+(i+1), PAD-4, cy+5);
     /* 红球 */
+    var lastRedRight = x + (bet.r.length-1)*50 + 20;   /* 最后一个红球的右边缘 */
     for(var j=0;j<bet.r.length;j++){ drawImgBall(g,x,cy,20,'#e8402a',pad(bet.r[j])); x+=50; }
-    /* 加号 */
-    g.fillStyle='#999'; g.font='600 20px sans-serif'; g.textAlign='center';
-    g.fillText('+', x+8, cy+7); x+=34;
+    /* 加号：放在「最后一个红球右边缘」与「第一个蓝球左边缘」的正中间。
+       原来写死在 x+8，实测距蓝球左边缘只剩 6px，看着像蓝球的一部分。
+       这里改为按两侧边缘算中点，并留出更宽的间隔。 */
+    if(bet.b.length){
+      var blueStart = x + 46;                          /* 第一个蓝球的圆心 */
+      var plusCx = (lastRedRight + (blueStart-20)) / 2;
+      g.fillStyle='#999'; g.font='600 20px sans-serif'; g.textAlign='center';
+      g.fillText('+', plusCx, cy+7);
+      x = blueStart;
+    }
     /* 蓝球 */
     for(var k=0;k<bet.b.length;k++){ drawImgBall(g,x,cy,20,'#2b6cd4',pad(bet.b[k])); x+=50; }
     y+=LH;
@@ -2194,6 +2411,10 @@ function licShowInfo(){
         : '<button onclick="admShowLogin()">管理员登录</button>')
       +'</div>';
   }
+  body+='<h4>本机设备码</h4><p style="font-size:15px;letter-spacing:2px"><b style="color:var(--brand)">'
+    +esc(licDevShow())+'</b></p>'
+    +'<p style="font-size:12px;color:#888">把它报给管理员，可签发<b>只认这台设备</b>的授权码'
+    +'（换设备也用不了）。换浏览器或清理数据会变，需重新报一次。</p>';
   if(o && o.code){
     body+='<h4>本机授权码</h4><p style="font-size:15px;letter-spacing:1px"><b>'+esc(o.code)+'</b></p>'
       +'<p style="font-size:12px;color:#888">已与本机绑定。建议抄下来保存：'
@@ -2376,6 +2597,9 @@ function showHelp(){
    +'<li>签发时可按<b>天 / 周 / 月 / 年</b>设置有效期，一次生成 1~20 个，'
    +'到期日实时预览，生成后可单个复制、复制全部或下载成名单。</li>'
    +'<li>管理员本人<b>免激活</b>，所以菜单里不再显示「访问授权」；退出登录后本机授权一并失效。</li>'
+   +'<li><b>设备绑定码</b>：签发时在「设备绑定」里填入对方的 4 位设备码，'
+   +'生成的是 16 位码，<b>只认那一台设备</b>，换设备激活不了，全程不需要联网。</li>'
+   +'<li>留空则生成 12 位<b>通用码</b>，任意设备都能用（适合自己多台设备）。</li>'
    +'<li>新签的码<b>不用重新构建或上传页面</b>，直接发给对方就能激活；每个码自带到期日。</li>'
    +'</ul>'
    +'<p style="font-size:12px;color:#888">说明：签发和验证都在页面内完成，密钥也在 HTML 里。'
@@ -3042,6 +3266,7 @@ function boot(){
   if(licBlocked()){ var mb=$('main'); if(mb) mb.innerHTML=renderLock(); licInitMenu(); return; }
   ensure(S.lot).then(function(){
     render();
+    licRecheck();          /* 复查登记表：该码是否被别的设备占用 */
     var seen=null; try{ seen=localStorage.getItem(HELP_SEEN); }catch(e){}
     if(!seen) showHelp();
   }).catch(function(){});

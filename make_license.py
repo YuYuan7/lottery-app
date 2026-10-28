@@ -64,6 +64,12 @@ def load():
     return {}
 
 
+def save(cfg):
+    json.dump(cfg, open(LIC_JSON, "w", encoding="utf-8"),
+              ensure_ascii=False, indent=2)
+    return cfg
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--init", action="store_true", help="首次开启：建管理员 + 签 5 个码")
@@ -77,7 +83,43 @@ def main():
     ap.add_argument("--admin-user", default="")
     ap.add_argument("--admin-pass", default="")
     ap.add_argument("--off", action="store_true")
+    ap.add_argument("--init-registry", action="store_true",
+                    help="创建云端登记表（一码一机），需本机联网")
+    ap.add_argument("--provider", default="jsonblob",
+                    choices=["jsonblob", "pantry"], help="登记表服务商")
+    ap.add_argument("--reg-url", default="", help="直接指定登记表地址（GET 读 / PUT 写）")
+    ap.add_argument("--reg-off", action="store_true", help="停用云端登记，退回纯本机绑定")
+    ap.add_argument("--dev", default="", help="设备码（4 位）：生成只认该设备的绑定码")
     a = ap.parse_args()
+
+    # ---- 云端登记表 ----
+    if a.init_registry:
+        import lic_reg
+        try:
+            url, _ = lic_reg.create(a.provider)
+        except Exception as e:      # noqa
+            print("创建失败：%s" % e)
+            print("可能是被网络拦截。可手动创建后改用 --reg-url 填入地址。")
+            return
+        cfg = load()
+        cfg["regUrl"] = url
+        save(cfg)
+        print("登记表已创建：%s" % url)
+        print("已写入 license.json，请重新构建页面（python3 build_single.py --no-refresh）")
+        return
+    if a.reg_url:
+        cfg = load()
+        cfg["regUrl"] = a.reg_url
+        save(cfg)
+        print("已设置登记表：%s" % a.reg_url)
+        print("请重新构建页面（python3 build_single.py --no-refresh）")
+        return
+    if a.reg_off:
+        cfg = load()
+        cfg.pop("regUrl", None)
+        save(cfg)
+        print("已停用云端登记：退回「仅本机绑定」，同一码可在多台设备各激活一次。")
+        return
 
     if a.off:
         if os.path.exists(LIC_JSON):
@@ -137,8 +179,9 @@ def main():
                             or a.months or a.years) else 0
     plain = []
     for _ in range(n):
-        plain.append(make_code(cfg["sigSalt"], expire))
-    print("已签发 %d 个授权码，到期日 %s" % (len(plain), expire))
+        plain.append(make_code(cfg["sigSalt"], expire, a.dev))
+    print("已签发 %d 个%s，到期日 %s" % (len(plain),
+          ("设备绑定码（只认设备 " + a.dev + "）") if a.dev else "授权码", expire))
 
     json.dump(cfg, open(LIC_JSON, "w", encoding="utf-8"),
               ensure_ascii=False, indent=2)

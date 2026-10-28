@@ -47,6 +47,8 @@ def load_license():
         out["sigSalt"] = cfg["sigSalt"]
     if cfg.get("admin"):
         out["admin"] = cfg["admin"]
+    if cfg.get("regUrl"):
+        out["regUrl"] = cfg["regUrl"]
     return out
 
 
