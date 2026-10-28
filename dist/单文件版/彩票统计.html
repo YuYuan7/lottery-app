@@ -701,7 +701,8 @@ function admCopy(i){
   admClip(t,'已复制第 '+(i+1)+' 个');
 }
 function admCopyAll(){
-  var t=S.admOut.map(function(o){return o.code+'（到期 '+o.exp+'）';}).join('\n');
+  /* 同样只复制纯码，每行一个，方便直接粘贴激活或分发 */
+  var t=S.admOut.map(function(o){return o.code;}).join('\n');
   admClip(t,'已复制全部 '+S.admOut.length+' 个');
 }
 function admSaveTxt(){
@@ -766,9 +767,8 @@ function licDeactivate(){
 }
 function licCopyCode(){
   var o=licGet(); if(!o||!o.code) return;
-  var exp=(o.exp&&/^\d{4}-/.test(o.exp))?o.exp:((LICENSE&&LICENSE.expire)||'—');
-  var txt='授权码 '+o.code+'（到期 '+exp+'）';
-  copySmart(txt, '已复制授权码', '授权码');
+  /* 只复制纯授权码本身，不带任何说明文字——否则粘贴到激活框会校验失败 */
+  copySmart(o.code, '已复制授权码 '+o.code, '授权码');
 }
 function licInitMenu(){
   var row=$('side-lic'); if(!row) return;
@@ -2384,6 +2384,9 @@ function showHelp(){
    +'<li><b>生成投注图片</b>：把号码画成<b>大字号图片</b>，手机上长按可保存或转发，'
    +'给店主看图比口头念号更不容易出错</li></ul>'
 
+   +'<h4>顶部时间</h4><ul>'
+   +'<li><b>数据更新于</b>＝页面构建（抓取数据）的时刻，固定不变，可用来判断数据新旧</li>'
+   +'<li><b>当前时间</b>＝你设备的实时时间，<b>每秒自动跳动</b>，无需刷新页面</li></ul>'
    +'<h4>开奖倒计时</h4><ul>'
    +'<li>「最新一期」卡片下方显示<b>距下次开奖</b>的时间，每秒自更新</li>'
    +'<li>同时标注该彩种的<b>开奖日与时刻</b>：双色球 周二·周四·周日 21:15；'
@@ -2487,7 +2490,7 @@ function head(){
       :((d&&d.rows&&d.rows.length)?String(d.rows[d.rows.length-1][1]):'未知'));
   var s=licTopBar();
   s+='<div class="upd">数据更新于 '+txt
-    +' · 当前时间 '+fmtDt(new Date())+'</div>';
+    +' · 当前时间 <span id="nowtm">'+fmtDt(new Date())+'</span></div>';
   if(d.stale) s+='<div class="card"><div class="warn">当前为上次缓存数据（官方接口暂时不可用），稍后会自动恢复实时。</div></div>';
   return s;
 }
@@ -3086,6 +3089,19 @@ function render(){
   m.innerHTML=h;
   startCountdown();          /* 倒计时每秒自更新，只改这一个元素，不整页重绘 */
 }
+/* 顶部「当前时间」每秒自更新：只改 #nowtm 这一个元素，不整页重绘，
+   因此不会影响你正在选号 / 输入的内容。锁屏页没有该元素时自动跳过 */
+function startNowClock(){
+  if(window.__nowTimer) return;
+  window.__nowTimer=setInterval(function(){
+    try{
+      var el=document.getElementById('nowtm');
+      if(!el) return;
+      var t=fmtDt(new Date());
+      if(el.textContent!==t) el.textContent=t;
+    }catch(e){}
+  },1000);
+}
 function boot(){
   if(licBlocked()){ var mb=$('main'); if(mb) mb.innerHTML=renderLock(); licInitMenu(); return; }
   ensure(S.lot).then(function(){
@@ -3095,6 +3111,7 @@ function boot(){
   }).catch(function(){});
 }
 licInitMenu();
+startNowClock();
 boot();
 </script>
 <script>
