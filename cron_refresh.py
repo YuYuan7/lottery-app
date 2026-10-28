@@ -45,10 +45,13 @@ META_KEYS = ("name", "redMax", "blueMax", "redCount", "blueCount",
 DRAW_DAYS = {
     "ssq": {1, 3, 6},   # 周二、周四、周日
     "dlt": {0, 2, 5},   # 周一、周三、周六
+    "3d": {0, 1, 2, 3, 4, 5, 6},   # 福彩3D 每天开奖
+    "pls": {0, 1, 2, 3, 4, 5, 6},  # 排列三 每天开奖
 }
 # 开奖时刻（北京时间），用于判断现在是否已过开奖时间
-DRAW_HOUR = {"ssq": 21, "dlt": 20}
-DRAW_MIN = {"ssq": 15, "dlt": 30}
+LOTS = ("ssq", "dlt", "3d", "pls")
+DRAW_HOUR = {"ssq": 21, "dlt": 20, "3d": 21, "pls": 21}
+DRAW_MIN = {"ssq": 15, "dlt": 30, "3d": 15, "pls": 25}
 
 
 def log(m):
@@ -87,8 +90,11 @@ def probe_latest(lot, crawler):
     """快速探测官方接口的最新期号（比全量抓取轻）"""
     try:
         if lot == "ssq":
-            # 福彩一次可取全部，约 0.2s，直接全量即可
             d = crawler.fetch_ssq()
+        elif lot == "3d":
+            d = crawler.fetch_3d()
+        elif lot == "pls":
+            d = crawler.fetch_pls(max_pages=3)
         else:
             # 体彩全量要数秒，探测时只取最近 1 页
             d = crawler.fetch_dlt_recent(pages=1)
@@ -176,12 +182,14 @@ def main():
     before = {
         "ssq": sig(os.path.join(STATIC, "data", "ssq.json")),
         "dlt": sig(os.path.join(STATIC, "data", "dlt.json")),
+        "3d": sig(os.path.join(STATIC, "data", "3d.json")),
+        "pls": sig(os.path.join(STATIC, "data", "pls.json")),
         "single": sig(os.path.join(SINGLE, "彩票统计.html")),
     }
 
     import crawler
     ok = 0
-    for lot in ("ssq", "dlt"):
+    for lot in LOTS:
         body = fetch_one(lot, crawler, args.poll_minutes, args.interval)
         if not body:
             continue
@@ -203,6 +211,8 @@ def main():
     after = {
         "ssq": sig(os.path.join(STATIC, "data", "ssq.json")),
         "dlt": sig(os.path.join(STATIC, "data", "dlt.json")),
+        "3d": sig(os.path.join(STATIC, "data", "3d.json")),
+        "pls": sig(os.path.join(STATIC, "data", "pls.json")),
         "single": sig(os.path.join(SINGLE, "彩票统计.html")),
     }
     changed = before != after

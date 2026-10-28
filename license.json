@@ -1,0 +1,16 @@
+{
+  "salt": "YDV3XFJ8X8NKJY83",
+  "expire": "2027-01-28",
+  "codes": [
+    "63b2edf6da7f84f046f99096",
+    "388312c79ac4f463fb5b0356",
+    "2adceb8711816ea86fc9b5c8",
+    "93f6ff318b583f1a4bf3e075",
+    "6e48d2bd862129e5089d9e62"
+  ],
+  "admin": {
+    "user": "admin",
+    "hash": "2ff4a6734d81f1b08b143b0e"
+  },
+  "sigSalt": "SE8DPHX8K5AKMQQZ"
+}

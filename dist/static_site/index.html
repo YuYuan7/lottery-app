@@ -7,111 +7,147 @@
 <meta name="theme-color" content="#e8402a">
 <title>彩票统计（离线单文件版）· 双色球 / 大乐透</title>
 <style>
+/* ---------- 主题变量 ---------- */
+:root{
+  --bg:#f2f3f5; --surface:#fff; --surface2:#fafafa; --surface3:#f5f5f5;
+  --fg:#1a1a1a; --fg2:#333; --fg3:#555; --fg4:#666; --fg5:#888; --fg6:#999; --fg7:#aaa;
+  --bd:#e5e5e5; --bd2:#ddd; --bd3:#f0f0f0; --hover:#f7f7f7;
+  --hl:#fff3d6; --brand:#e8402a;
+  --warnbg:#fff8e6; --hitbg:#fff5e6; --warnfg:#8a6100;
+  --okbg:#e8f5e9; --okfg:#2e7d32; --errbg:#ffebee; --errfg:#c62828;
+  --hitbd:#ffd9a6; --hlbd:#f0e2bd;
+  color-scheme:light;
+}
+body.dark{
+  --bg:#121212; --surface:#1e1e1e; --surface2:#252525; --surface3:#2b2b2b;
+  --fg:#e6e6e6; --fg2:#d8d8d8; --fg3:#c0c0c0; --fg4:#a8a8a8; --fg5:#949494; --fg6:#848484; --fg7:#787878;
+  --bd:#333; --bd2:#3d3d3d; --bd3:#2c2c2c; --hover:#2e2e2e;
+  --hl:#4a3a14; --brand:#ff5a45;
+  --warnbg:#3a2f16; --hitbg:#38301a; --warnfg:#ffcc80;
+  --okbg:#1e3320; --okfg:#6fbf73; --errbg:#3a1e20; --errfg:#ff7b72;
+  --hitbd:#6b5330; --hlbd:#5a4a26;
+  color-scheme:dark;      /* 让下拉框、滚动条等原生控件一起变深 */
+}
+/* 内联样式里写死的颜色，用属性选择器统一接管（选择器内容不可被变量替换） */
+body.dark [style*="color:#aaa"],body.dark [style*="color:#999"],
+body.dark [style*="color:#888"],body.dark [style*="color:#bbb"],
+body.dark [style*="color:#777"]{color:var(--fg5)!important}
+body.dark [style*="color:#666"],body.dark [style*="color:#555"]{color:var(--fg4)!important}
+body.dark [style*="color:#333"],body.dark [style*="color:#444"],
+body.dark [style*="color:#222"]{color:var(--fg)!important}
+body.dark [style*="background:#fafafa"]{background:var(--surface2)!important}
+body.dark [style*="background:#fff5e6"],body.dark [style*="background:#fff8e6"],
+body.dark [style*="background:#fff3d6"]{background:var(--warnbg)!important}
+/* 深色下几个写死的红/绿文字提亮，保证对比度 */
+body.dark [style*="color:#c33"],body.dark [style*="color:#c62828"]{color:#ff7b72!important}
+body.dark [style*="color:#2e7d32"]{color:#6fbf73!important}
+body.dark [style*="color:#e07b00"]{color:#ffb74d!important}
+body.dark [style*="background:#b0b0b0"]{background:#555!important}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;
- background:#f2f3f5;color:#1a1a1a;font-size:14px;-webkit-text-size-adjust:100%;
+ background:var(--bg);color:var(--fg);font-size:14px;-webkit-text-size-adjust:100%;
  padding-bottom:env(safe-area-inset-bottom)}
-header{position:sticky;top:0;z-index:60;background:#fff;border-bottom:1px solid #e5e5e5;
+header{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--bd);
  padding:10px 12px 0;padding-top:calc(10px + env(safe-area-inset-top))}
 .lot{display:flex;gap:8px;margin-bottom:10px;align-items:center}
-.lot button{flex:1;padding:10px 0;border:1px solid #d0d0d0;background:#fff;border-radius:8px;
- font-size:15px;font-weight:600;color:#555;cursor:pointer}
-.lot button.on{background:#e8402a;color:#fff;border-color:#e8402a}
+.lot button{flex:1;padding:10px 0;border:1px solid var(--bd2);background:var(--surface);border-radius:8px;
+ font-size:15px;font-weight:600;color:var(--fg3);cursor:pointer}
+.lot button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 /* 菜单按钮：纯 CSS 三条杠，不依赖字体，绝不出现问号/方块乱码 */
-.menu{width:38px;height:38px;border-radius:8px;border:1px solid #ddd;background:#fff;flex:none;
+.menu{width:38px;height:38px;border-radius:8px;border:1px solid var(--bd2);background:var(--surface);flex:none;
  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-.menu i{display:block;width:18px;height:2px;background:#888;border-radius:1px}
-.menu:active{background:#f5f5f5}
+.menu i{display:block;width:18px;height:2px;background:var(--fg5);border-radius:1px}
+.menu:active{background:var(--surface3)}
 .sidemask{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:150;display:none}
 .sidemask.on{display:block}
-.sidepanel{position:absolute;left:0;top:0;bottom:0;width:264px;max-width:82vw;background:#fff;
+.sidepanel{position:absolute;left:0;top:0;bottom:0;width:264px;max-width:82vw;background:var(--surface);
  box-shadow:2px 0 14px rgba(0,0,0,.16);display:flex;flex-direction:column;overflow:auto;
  padding-top:env(safe-area-inset-top);animation:slidein .22s ease}
 @keyframes slidein{from{transform:translateX(-100%)}to{transform:translateX(0)}}
-.sidehead{padding:16px 16px 12px;font-size:16px;font-weight:700;color:#222;
- border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
-.sidehead span{color:#bbb;font-size:22px;cursor:pointer;line-height:1;padding:0 2px}
-.sideitem{padding:13px 16px;font-size:14.5px;color:#333;border-bottom:1px solid #f5f5f5;
+.sidehead{padding:16px 16px 12px;font-size:16px;font-weight:700;color:var(--fg);
+ border-bottom:1px solid var(--bd3);display:flex;justify-content:space-between;align-items:center}
+.sidehead span{color:var(--fg5);font-size:22px;cursor:pointer;line-height:1;padding:0 2px}
+.sideitem{padding:13px 16px;font-size:14.5px;color:var(--fg2);border-bottom:1px solid var(--bd3);
  cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.sideitem:active{background:#f7f7f7}
-.sideitem em{font-style:normal;font-size:11.5px;color:#aaa;font-weight:400}
-.sideitem.danger{color:#c62828}
-.sidenote{padding:14px 16px;font-size:11.5px;color:#aaa;line-height:1.7;margin-top:auto}
-.tabs{display:flex;gap:2px}
-.tabs button{flex:1;padding:9px 0;border:none;background:none;font-size:12.5px;color:#888;
+.sideitem:active{background:var(--hover)}
+.sideitem em{font-style:normal;font-size:11.5px;color:var(--fg7);font-weight:400}
+.sideitem.danger{color:var(--errfg)}
+.sidenote{padding:14px 16px;font-size:11.5px;color:var(--fg7);line-height:1.7;margin-top:auto}
+.tabs{display:flex;flex-wrap:wrap;gap:0;overflow:visible}
+.tabs button{flex:0 0 auto;min-width:25%;box-sizing:border-box;padding:9px 6px;border:none;background:none;font-size:12.5px;color:var(--fg5);
  border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
-.tabs button.on{color:#e8402a;font-weight:600;border-bottom-color:#e8402a}
+.tabs button.on{color:var(--brand);font-weight:600;border-bottom-color:var(--brand)}
 main{padding:10px 12px 24px}
-.card{background:#fff;border-radius:10px;overflow:hidden;margin-bottom:12px;
+.card{background:var(--surface);border-radius:10px;overflow:hidden;margin-bottom:12px;
  box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.bar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap}
-.bar label{font-size:13px;color:#666}
-.seg{display:flex;border:1px solid #ddd;border-radius:6px;overflow:hidden}
-.seg button{padding:5px 12px;border:none;background:#fff;font-size:12.5px;color:#666;cursor:pointer}
-.seg button.on{background:#e8402a;color:#fff}
-select{padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff;color:#333}
-.chk{display:flex;align-items:center;gap:4px;font-size:12.5px;color:#666;cursor:pointer}
-.hint{font-size:12px;color:#999;padding:8px 12px;line-height:1.5}
+.bar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd3);flex-wrap:wrap}
+.bar label{font-size:13px;color:var(--fg4)}
+.seg{display:flex;border:1px solid var(--bd2);border-radius:6px;overflow:hidden}
+.seg button{padding:5px 12px;border:none;background:var(--surface);font-size:12.5px;color:var(--fg4);cursor:pointer}
+.seg button.on{background:var(--brand);color:#fff}
+select{padding:6px 8px;border:1px solid var(--bd2);border-radius:6px;font-size:13px;background:var(--surface);color:var(--fg2)}
+.chk{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--fg4);cursor:pointer}
+.hint{font-size:12px;color:var(--fg6);padding:8px 12px;line-height:1.5}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
-th,td{padding:8px 10px;text-align:center;border-bottom:1px solid #f2f2f2}
-th{background:#fafafa;font-weight:600;color:#555;cursor:pointer;user-select:none}
-th .ar{color:#e8402a;font-size:11px;margin-left:2px}
-th.act{color:#e8402a}
+th,td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--bd3)}
+th{background:var(--surface2);font-weight:600;color:var(--fg3);cursor:pointer;user-select:none}
+th .ar{color:var(--brand);font-size:11px;margin-left:2px}
+th.act{color:var(--brand)}
 td.l{text-align:left}
-tr.hl{background:#fff3d6}
-tr.hl td{border-bottom-color:#f0e2bd}
+tr.hl{background:var(--hl)}
+tr.hl td{border-bottom-color:var(--hlbd)}
 .balls{display:flex;gap:3px;justify-content:center;align-items:center;flex-wrap:wrap}
 .b{width:22px;height:22px;line-height:22px;border-radius:50%;font-size:12px;font-weight:600;
  text-align:center;display:inline-block}
-.b.r{background:#e8402a;color:#fff}
+.b.r{background:var(--brand);color:#fff}
 .b.bl{background:#2b6cd4;color:#fff}
 .b.big{width:28px;height:28px;line-height:28px;font-size:14px}
-.sep{color:#ccc;margin:0 2px}
-.more{display:block;width:100%;padding:11px;border:none;background:#fff;color:#e8402a;
- font-size:14px;cursor:pointer;border-top:1px solid #f0f0f0}
-.state{padding:40px 16px;text-align:center;color:#888;font-size:14px;line-height:1.8}
-.spin{width:26px;height:26px;border:3px solid #eee;border-top-color:#e8402a;border-radius:50%;
+.sep{color:var(--bd2);margin:0 2px}
+.more{display:block;width:100%;padding:11px;border:none;background:var(--surface);color:var(--brand);
+ font-size:14px;cursor:pointer;border-top:1px solid var(--bd3)}
+.state{padding:40px 16px;text-align:center;color:var(--fg5);font-size:14px;line-height:1.8}
+.spin{width:26px;height:26px;border:3px solid var(--bd3);border-top-color:var(--brand);border-radius:50%;
  margin:0 auto 12px;animation:s .8s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}
-.err{color:#c33}
-button.retry{margin-top:10px;padding:8px 18px;border:1px solid #e8402a;background:#fff;color:#e8402a;
+.err{color:var(--errfg)}
+button.retry{margin-top:10px;padding:8px 18px;border:1px solid var(--brand);background:var(--surface);color:var(--brand);
  border-radius:6px;font-size:14px;cursor:pointer}
-.upd{font-size:11px;color:#aaa;padding:6px 12px 2px}
-.warn{background:#fff8e6;color:#8a6100;font-size:12px;padding:8px 12px;line-height:1.5}
-.sec{padding:8px 12px;background:#fafafa;font-size:13px;font-weight:600;color:#555;border-bottom:1px solid #f0f0f0}
-.note{font-size:11px;color:#aaa;padding:8px 12px;line-height:1.6}
+.upd{font-size:11px;color:var(--fg7);padding:6px 12px 2px}
+.warn{background:var(--warnbg);color:var(--warnfg);font-size:12px;padding:8px 12px;line-height:1.5}
+.sec{padding:8px 12px;background:var(--surface2);font-size:13px;font-weight:600;color:var(--fg3);border-bottom:1px solid var(--bd3)}
+.note{font-size:11px;color:var(--fg7);padding:8px 12px;line-height:1.6}
 /* 走势：点阵 */
-.svgwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff}
+.svgwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--surface)}
 svg{display:block}
-.legend{display:flex;flex-wrap:wrap;gap:3px;padding:8px 10px;border-top:1px solid #f0f0f0}
+.legend{display:flex;flex-wrap:wrap;gap:3px;padding:8px 10px;border-top:1px solid var(--bd3)}
 .lg{width:26px;height:22px;line-height:22px;text-align:center;font-size:10px;border-radius:3px;
  color:#fff;font-weight:600;cursor:pointer;opacity:.95}
 .lg.off{opacity:.28}
-.tip{padding:16px 12px;text-align:center;color:#aaa;font-size:13px}
+.tip{padding:16px 12px;text-align:center;color:var(--fg7);font-size:13px}
 .onepick{display:flex;flex-wrap:wrap;gap:4px}
 .onb{width:26px;height:24px;line-height:24px;text-align:center;border-radius:4px;
  font-size:11px;font-weight:600;cursor:pointer;color:#fff}
-.onb.sel{box-shadow:0 0 0 2px #fff,0 0 0 3.5px #333}
-.statcard{margin:2px 12px 10px;padding:12px 12px 6px;background:#fafafa;border-radius:10px;
- border:1px solid #f0f0f0}
+.onb.sel{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--fg2)}
+.statcard{margin:2px 12px 10px;padding:12px 12px 6px;background:var(--surface2);border-radius:10px;
+ border:1px solid var(--bd3)}
 .sctop{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .scnum{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:22px;
  border-radius:5px;color:#fff;font-size:12px;font-weight:700;padding:0 6px}
-.sctop select{margin-left:auto;font-size:12px;padding:4px 6px;border:1px solid #e2e2e2;
- border-radius:6px;background:#fff;color:#555}
+.sctop select{margin-left:auto;font-size:12px;padding:4px 6px;border:1px solid var(--bd2);
+ border-radius:6px;background:var(--surface);color:var(--fg3)}
 .scmain{display:flex;gap:8px;margin-bottom:10px}
-.sci{flex:1;background:#fff;border:1px solid #eeeeee;border-radius:8px;padding:9px 4px;text-align:center}
-.sci em{display:block;font-style:normal;font-size:19px;font-weight:700;color:#222;line-height:1.25}
-.sci span{display:block;font-size:10.5px;color:#999;margin-top:3px}
-.sctbl{border-top:1px solid #eeeeee;padding-top:6px}
+.sci{flex:1;background:var(--surface);border:1px solid var(--bd3);border-radius:8px;padding:9px 4px;text-align:center}
+.sci em{display:block;font-style:normal;font-size:19px;font-weight:700;color:var(--fg);line-height:1.25}
+.sci span{display:block;font-size:10.5px;color:var(--fg6);margin-top:3px}
+.sctbl{border-top:1px solid var(--bd3);padding-top:6px}
 .scr{display:flex;justify-content:space-between;align-items:center;padding:5px 2px;
- font-size:12px;border-bottom:1px solid #f4f4f4}
+ font-size:12px;border-bottom:1px solid var(--bd3)}
 .scr:last-child{border-bottom:none}
-.scr span{color:#888}
-.scr b{color:#333;font-weight:600}
-.onestat{font-size:12px;color:#666;padding:4px 12px 12px;line-height:1.7}
-.onestat b{color:#333;font-size:13px}
+.scr span{color:var(--fg5)}
+.scr b{color:var(--fg2);font-weight:600}
+.onestat{font-size:12px;color:var(--fg4);padding:4px 12px 12px;line-height:1.7}
+.onestat b{color:var(--fg2);font-size:13px}
 /* 冷热：方格 */
 .heatgrid{display:flex;flex-wrap:wrap;gap:5px;padding:10px 12px}
 .hcell{width:calc((100% - 30px)/7);border-radius:6px;padding:5px 0;text-align:center;color:#fff}
@@ -119,49 +155,161 @@ svg{display:block}
 .hc{font-size:9.5px;opacity:.9;line-height:1.2}
 .toprow{display:flex;gap:6px;align-items:center;padding:4px 12px;font-size:12px;flex-wrap:wrap}
 .chip{display:inline-block;padding:2px 7px;border-radius:10px;color:#fff;font-size:11px;font-weight:600}
-.lgd{display:flex;gap:6px;padding:6px 12px 10px;flex-wrap:wrap;font-size:11px;color:#666;align-items:center}
+.lgd{display:flex;gap:6px;padding:6px 12px 10px;flex-wrap:wrap;font-size:11px;color:var(--fg4);align-items:center}
 .lgb{width:16px;height:10px;border-radius:2px;display:inline-block}
 /* 我的选号 */
 .pick{padding:10px 12px}
 .grid{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
 .nb{width:34px;height:34px;line-height:34px;text-align:center;border-radius:50%;
- border:1px solid #ddd;background:#fff;font-size:13px;color:#555;cursor:pointer}
-.nb.sel{background:#e8402a;color:#fff;border-color:#e8402a;font-weight:600}
+ border:1px solid var(--bd2);background:var(--surface);font-size:13px;color:var(--fg3);cursor:pointer}
+.nb.sel{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
 .nb.sel.b{background:#2b6cd4;border-color:#2b6cd4}
 .btns{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
-.btns button{padding:8px 14px;border-radius:6px;border:1px solid #e8402a;background:#fff;
- color:#e8402a;font-size:13px;cursor:pointer}
-.btns button.g{border-color:#ccc;color:#666}
-.btns button.p{background:#e8402a;color:#fff}
-.btns button.dis{background:#f5f5f5;border-color:#e0e0e0;color:#bbb}
-.prev{background:#fafafa;border:1px dashed #e0e0e0;border-radius:8px;padding:10px;margin:8px 0}
+.btns button{padding:8px 14px;border-radius:6px;border:1px solid var(--brand);background:var(--surface);
+ color:var(--brand);font-size:13px;cursor:pointer}
+.btns button.g{border-color:var(--bd2);color:var(--fg4)}
+.btns button.p{background:var(--brand);color:#fff}
+.btns button.dis{background:var(--surface3);border-color:var(--bd3);color:var(--fg5)}
+.prev{background:var(--surface2);border:1px dashed var(--bd2);border-radius:8px;padding:10px;margin:8px 0}
 .msg{font-size:12px;line-height:1.9;padding:0 2px}
-.msg .e{color:#c62828}
-.msg .w{color:#e07b00}
-.msg .ok{color:#2e7d32}
-.betcard{border-top:1px solid #f0f0f0;padding:12px}
+.msg .e{color:var(--errfg)}
+.msg .w{color:var(--warnfg)}
+.msg .ok{color:var(--okfg)}
+.betcard{border-top:1px solid var(--bd3);padding:12px}
 .bettop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.kv{font-size:12px;color:#666;line-height:1.9;margin-top:6px}
-.kv b{color:#333;font-weight:600}
+.kv{font-size:12px;color:var(--fg4);line-height:1.9;margin-top:6px}
+.kv b{color:var(--fg2);font-weight:600}
 .tagline{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;margin-right:4px}
-.tag-ok{background:#e8f5e9;color:#2e7d32}
-.tag-no{background:#f5f5f5;color:#888}
-.tag-hot{background:#ffebee;color:#c62828}
-.del{border:none;background:none;color:#ccc;font-size:18px;cursor:pointer;padding:0 4px}
-.empty{padding:30px 12px;text-align:center;color:#aaa;font-size:13px}
+.tag-ok{background:var(--okbg);color:var(--okfg)}
+.tag-no{background:var(--surface3);color:var(--fg5)}
+.tag-hot{background:var(--errbg);color:var(--errfg)}
+.empty{padding:30px 12px;text-align:center;color:var(--fg7);font-size:13px}
+/* 通用表单（中奖核对 / 条件机选 共用） */
+.frow{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.flab{font-size:12.5px;color:var(--fg4);flex:none}
+.ipt{padding:7px 9px;border:1px solid var(--bd2);border-radius:6px;font-size:13px;background:var(--surface);color:var(--fg2);width:118px}
+.ipt.sm{width:74px}
+.ipt.wide{width:100%;flex:1;min-width:120px}
+.rdo{display:flex;gap:6px;flex-wrap:wrap}
+.rdo span{padding:6px 11px;border:1px solid var(--bd2);border-radius:6px;font-size:12.5px;
+ color:var(--fg4);cursor:pointer;background:var(--surface)}
+.rdo span.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
+/* 中奖核对结果 */
+.pz{margin:0 12px 12px;padding:14px 12px;border-radius:10px;text-align:center;
+ background:var(--surface2);border:1px solid var(--bd3)}
+.pz.hit{background:var(--hitbg);border-color:var(--hitbd)}
+.pzname{font-size:21px;font-weight:700;color:var(--brand);line-height:1.35}
+.pzno{font-size:16px;font-weight:600;color:var(--fg6);line-height:1.35}
+.pzamt{font-size:12.5px;color:var(--fg5);margin-top:5px}
+.pzsub{font-size:12px;color:var(--fg4);margin-top:9px;line-height:1.8}
+.hitrow{display:flex;gap:3px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:10px}
+.hitlab{font-size:11.5px;color:var(--fg6);margin:10px 0 5px;text-align:center}
+.same{padding:4px 12px 12px}
+.srow{display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd3);
+ font-size:13px;flex-wrap:wrap}
+.srow:last-child{border-bottom:none}
+.srow .yr{flex:none;width:44px;color:var(--fg5);font-size:12px}
+.srow .is{flex:none;width:66px;color:var(--fg6);font-size:11.5px}
+.srow .dt{flex:none;width:80px;color:var(--fg6);font-size:11.5px}
+.srow .bs{flex:1;display:flex;gap:3px;justify-content:flex-end;flex-wrap:wrap}
+.sameh{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd3);font-size:11.5px;color:var(--fg7)}
 /* 说明弹层 */
 .mask{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;
  align-items:center;justify-content:center;padding:20px}
-.modal{background:#fff;border-radius:12px;max-width:420px;width:100%;max-height:80vh;overflow:auto}
-.mh{padding:14px 16px;border-bottom:1px solid #f0f0f0;font-size:16px;font-weight:600;
+.modal{background:var(--surface);border-radius:12px;max-width:420px;width:100%;max-height:80vh;overflow:auto}
+.mh{padding:14px 16px;border-bottom:1px solid var(--bd3);font-size:16px;font-weight:600;
  display:flex;justify-content:space-between;align-items:center}
-.mh span{color:#aaa;font-size:22px;cursor:pointer;line-height:1}
-.mb{padding:12px 16px 18px;font-size:13px;line-height:1.85;color:#444}
-.mb h4{font-size:13px;color:#e8402a;margin:12px 0 3px}
+.mh span{color:var(--fg7);font-size:22px;cursor:pointer;line-height:1}
+.mb{padding:12px 16px 18px;font-size:13px;line-height:1.85;color:var(--fg2)}
+.mb h4{font-size:13px;color:var(--brand);margin:12px 0 3px}
 .mb h4:first-child{margin-top:0}
-.mb p{color:#666}
-.mb b{color:#333}
-.mb ul{margin:2px 0 0 16px;color:#666}
+.mb p{color:var(--fg4)}
+.mb b{color:var(--fg2)}
+.mb ul{margin:2px 0 0 16px;color:var(--fg4)}
+
+/* ---------- 开奖倒计时 ---------- */
+.cdown{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--surface2);
+ border:1px solid var(--bd3);font-size:12px;color:var(--fg4);line-height:1.6}
+.cdown b{color:var(--brand);font-size:14px;font-variant-numeric:tabular-nums}
+.cdown .sch{color:var(--fg6);font-size:11px}
+body.dark .cdown b{color:#ff8a7a}
+/* ---------- 自选号码：自动核对结果 ---------- */
+.bres{margin-top:8px;padding:7px 9px;border-radius:7px;font-size:12px;line-height:1.5;
+ background:var(--surface3);color:var(--fg4)}
+.bres.hit{background:var(--hitbg);border:1px solid var(--hitbd);color:var(--warnfg)}
+.bres .bn{font-weight:700;font-size:13px}
+.bres .ba{font-weight:700}
+body.dark .bres.hit{background:#3a2f18;border-color:#6b5525;color:#ffca7a}
+/* 注操作按钮 */
+.betops{display:flex;gap:6px;margin-top:8px}
+.betops button{flex:1;padding:6px 0;border:1px solid var(--bd2);border-radius:6px;
+ background:var(--surface);font-size:11.5px;color:var(--fg4);cursor:pointer}
+.betops button:active{background:var(--hover)}
+.betops button.delbtn{color:#c33;border-color:#e8b4b4}
+.betops button.confirm{background:#c33;color:#fff;border-color:#c33}
+/* 选号记录：彩种徽章 + 左侧色条，一眼区分双色球 / 大乐透 */
+.rechead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px}
+.lotbadge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;
+ font-weight:700;color:#fff;letter-spacing:.5px}
+.lb-ssq{background:#e8402a}
+.lb-dlt{background:#1a6fd4}
+.betcard.rec-ssq{border-left:4px solid #e8402a}
+.betcard.rec-dlt{border-left:4px solid #1a6fd4}
+.rects{color:var(--fg5,#888)}
+.buyflag{color:#999;font-weight:600}
+.buyflag.on{color:#1a9c46}
+/* 选号记录筛选栏 */
+.recf{margin:0 12px 4px;padding:10px 12px;border:1px solid var(--bd2);border-radius:10px;
+ background:var(--surface2,var(--surface))}
+.recf .frow{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.recf .flab{flex:none;width:38px;font-size:12.5px;color:var(--fg6,#666)}
+.recf .rdo span{padding:4px 9px;font-size:12px}
+.recf .dti{flex:1 1 110px;min-width:100px;padding:5px 6px;font-size:12.5px;
+ border:1px solid var(--bd2);border-radius:6px;background:var(--surface);color:var(--fg)}
+body.dark .recf .dti{color-scheme:dark}
+.lb-3d{background:#d98324}
+.lb-pls{background:#0f9d8f}
+.betcard.rec-3d{border-left:4px solid #d98324}
+.betcard.rec-pls{border-left:4px solid #0f9d8f}
+/* 复式 / 胆拖：金额必须一眼看到，避免稀里糊涂多花钱 */
+.amtbig{margin:0 12px 8px;padding:12px;border-radius:10px;background:var(--surface2);
+ border:1px solid var(--bd3);display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.amtbig span{font-size:13px;color:var(--fg5)}
+.amtbig b{font-size:26px;color:#d32f2f;font-weight:800;font-variant-numeric:tabular-nums}
+body.dark .amtbig b{color:#ff6b5b}
+.amtwarn{margin:0 12px 10px;padding:10px 12px;border-radius:8px;font-size:12.5px;line-height:1.65;
+ background:#fff4e5;border:1px solid #f0c98a;color:#8a4b00}
+.amtwarn b{color:#c33}
+body.dark .amtwarn{background:#3a2c14;border-color:#6b5525;color:#ffca7a}
+body.dark .amtwarn b{color:#ff8a7a}
+/* 轻量提示条 */
+.toastbox{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);
+ max-width:88vw;background:rgba(28,28,28,.93);color:#fff;font-size:12.5px;line-height:1.5;
+ padding:9px 14px;border-radius:8px;z-index:300;opacity:0;pointer-events:none;
+ transition:opacity .18s,transform .18s;text-align:center;word-break:break-all}
+.toastbox.on{opacity:1;transform:translate(-50%,0)}
+body.dark .toastbox{background:rgba(240,240,240,.94);color:#1a1a1a}
+/* 图片预览 */
+.imgprev{width:100%;border-radius:8px;border:1px solid var(--bd3);display:block}
+.imghint{font-size:11.5px;color:var(--fg6);text-align:center;margin-top:8px;line-height:1.6}
+.dlbtn{display:block;text-align:center;margin-top:10px;padding:10px;border-radius:8px;
+ background:var(--brand);color:#fff;font-size:13.5px;font-weight:600;text-decoration:none}
+/* ---------- PC 宽屏适配 ---------- */
+@media (min-width:900px){
+  body{font-size:15px}
+  .lot,.tabs{max-width:1180px;margin-left:auto;margin-right:auto}
+  .lot{margin-bottom:12px}
+  main{max-width:1180px;margin:0 auto;padding:14px 18px 34px}
+  .card{border-radius:12px}
+  table{font-size:14px}
+  th,td{padding:10px 14px}
+  .nb{width:40px;height:40px;line-height:40px;font-size:14px}
+  .hcell{width:calc((100% - 60px)/14);padding:7px 0}
+  .sidepanel{width:300px}
+}
+@media (min-width:1400px){
+  .lot,.tabs,main{max-width:1320px}
+}
 </style>
 </head>
 <body>
@@ -169,7 +317,8 @@ svg{display:block}
   <div class="lot">
     <button id="b-ssq" onclick="setLot('ssq')">双色球</button>
     <button id="b-dlt" onclick="setLot('dlt')">大乐透</button>
-
+    <button id="b-3d" onclick="setLot('3d')">福彩3D</button>
+    <button id="b-pls" onclick="setLot('pls')">排列三</button>
   </div>
   <div class="tabs">
     <button id="t-menu" onclick="openSide()">菜单</button>
@@ -178,6 +327,9 @@ svg{display:block}
     <button id="t-freq" onclick="setTab('freq')">出现次数</button>
     <button id="t-heat" onclick="setTab('heat')">冷热分布</button>
     <button id="t-mine" onclick="setTab('mine')">我的选号</button>
+    <button id="t-rec" onclick="setTab('rec')">我的选号记录</button>
+    <button id="t-check" onclick="setTab('check')">中奖核对</button>
+    <button id="t-fsdt" onclick="setTab('fsdt')">复式/胆拖</button>
   </div>
 </header>
 <main id="main"></main>
@@ -187,6 +339,10 @@ svg{display:block}
     <div class="sideitem" onclick="closeSide();showHelp()">功能说明<em>各页面怎么看</em></div>
     <div class="sideitem" onclick="closeSide();showSource()">数据来源<em>官方接口</em></div>
     <div class="sideitem" onclick="refreshData()">刷新数据<em>强制重新抓取</em></div>
+    <div class="sideitem" onclick="closeSide();toggleTheme()">显示模式<em id="m-theme">浅色</em></div>
+    <div id="side-lic" class="sideitem" onclick="closeSide();licShowInfo()" style="display:none">访问授权<em id="m-lic"></em></div>
+    <div id="side-adm" class="sideitem" onclick="closeSide();admOpen()" style="display:none">管理员<em id="m-adm">未登录</em></div>
+    <div id="side-admgen" class="sideitem" onclick="closeSide();admShowGen()" style="display:none">生成授权码<em>页面内签发</em></div>
     <div class="sideitem" onclick="clearMyBets()">清除本机选号<em>仅本机</em></div>
     <div class="sidenote">数据实时取自中国福彩网 / 中国体彩官方接口，本页面不做任何预测。</div>
   </div>
@@ -194,16 +350,418 @@ svg{display:block}
 <div id="modal"></div>
 
 <script>
+/* ---------- 主题：默认跟随时间自动切换（白天浅色 / 夜间深色），可手动锁定 ---------- */
+/* 自动档：19:00–次日 07:00 为深色，其余时间浅色 */
+/* 只有「浅色 / 深色」两种显示。
+   没手动选过 → 跟随时间自动切换（19:00–次日 07:00 深色，其余浅色）；
+   手动选过 → 固定住，不再随时间变。
+   菜单右侧始终只显示当前是哪一种，不出现「自动（深色）」这类字样。 */
+var THEME_MODES=['light','dark'];
+function themeModeGet(){
+  try{ var v=localStorage.getItem('lc_theme'); }catch(e){ var v=null; }
+  if(v==='light'||v==='dark') return v;
+  return null;                 /* null = 未手动设置，跟随时间 */
+}
+function autoDarkNow(){ var h=new Date().getHours(); return (h>=19 || h<7); }
+function themeShouldDark(){
+  var m=themeModeGet();
+  if(m===null) return autoDarkNow();
+  return m==='dark';
+}
+function themeModeText(){ return themeShouldDark()?'深色':'浅色'; }
+(function(){
+  applyTheme(themeShouldDark());
+  /* 未手动设置时每分钟检查一次，跨过 19:00 / 07:00 会自动换肤 */
+  setInterval(function(){
+    try{
+      if(themeModeGet()!==null) return;
+      var want=autoDarkNow();
+      if(want!==isDark()) applyTheme(want);
+    }catch(e){}
+  }, 60000);
+})();
+function isDark(){ try{ return document.body.classList.contains('dark'); }catch(e){ return false; } }
+function applyTheme(dark){
+  try{
+    document.body.classList.toggle('dark', dark);
+    document.body.classList.toggle('light', !dark);
+    var m=document.querySelector('meta[name=theme-color]');
+    if(m) m.setAttribute('content', dark?'#121212':'#e8402a');
+    var e=document.getElementById('m-theme'); if(e) e.textContent = themeModeText();
+  }catch(e){}
+  /* SVG 里的颜色是生成时按当前主题算好的（fill 属性无法被 CSS 变量接管），
+     所以切换主题后必须重绘一次，否则走势图仍保留旧主题的浅色横带 */
+  try{
+    if(typeof render==='function' && typeof D!=='undefined'
+       && D && Object.keys(D).length) render();
+  }catch(e){}
+}
+/* 菜单里点一次：浅色 ↔ 深色。
+   切到的值若与当前时段相同，就清掉偏好、回到「跟随时间」，
+   这样始终只有两个可见状态，也不会被永久锁死。 */
+function toggleTheme(){
+  var want = themeShouldDark() ? 'light' : 'dark';
+  try{
+    if(want === (autoDarkNow()?'dark':'light')) localStorage.removeItem('lc_theme');
+    else localStorage.setItem('lc_theme', want);
+  }catch(e){}
+  applyTheme(themeShouldDark());
+}
+</script>
+<script>
 var API = (location.pathname.indexOf('/api/')===0 ? '' : './api') ;
 var D = {};
 /* 静态标记：由构建时注入，true=纯静态托管（无后端） */
 var STATIC_BUILD = true;
+/* ---------- 访问授权（可选，默认关闭）----------
+   构建时若注入了 LICENSE（{salt, expire, codes:[...]}），页面必须先凭授权码激活。
+   激活后会绑定当前设备：本机存的是「授权码 + 设备指纹」派生出的密钥，
+   换设备用同一个码会失效，需要重新激活；到期后全部失效。
+
+   诚实说明：这是纯前端校验，能挡住拿到链接但没有授权码的人，
+   但挡不住懂技术的人（HTML 源码可见，删掉校验即可绕过）。
+   真要按设备数硬限制、支持随时吊销，必须有后端配合。 */
+var LICENSE = {"salt":"YDV3XFJ8X8NKJY83","expire":"2027-01-28","codes":["63b2edf6da7f84f046f99096","388312c79ac4f463fb5b0356","2adceb8711816ea86fc9b5c8","93f6ff318b583f1a4bf3e075","6e48d2bd862129e5089d9e62"],"sigSalt":"SE8DPHX8K5AKMQQZ","admin":{"user":"admin","hash":"2ff4a6734d81f1b08b143b0e"}};
+function licH(s){
+  /* 同步字符串散列（FNV-1a 变体，三轮不同种子），够用于授权码比对 */
+  function one(str, seed){
+    var h = seed >>> 0, i;
+    for(i=0;i<str.length;i++){
+      h ^= str.charCodeAt(i);
+      h = (h + ((h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24))) >>> 0;
+    }
+    h ^= h >>> 16; h = Math.imul(h, 2246822507) >>> 0;
+    h ^= h >>> 13; h = Math.imul(h, 3266489909) >>> 0;
+    h = (h ^ (h >>> 16)) >>> 0;      /* 末尾必须转无符号，否则会出现负号 */
+    return ('00000000'+h.toString(16)).slice(-8);
+  }
+  return one(s, 0x811c9dc5) + one(s, 0x01000193) + one('x'+s, 0x9e3779b9);
+}
+function licFp(){
+  var n = navigator || {}, tz = '';
+  try{ tz = String(-new Date().getTimezoneOffset()); }catch(e){}
+  return licH([n.userAgent, n.language, (n.platform||''), (n.hardwareConcurrency||''),
+    (screen?screen.width+'x'+screen.height+'x'+(screen.colorDepth||''):''), tz].join('|'));
+}
+function licToday(){
+  var d=new Date(), p=function(n){return ('0'+n).slice(-2)};
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+/* ---------- 自校验授权码：到期日写在码里 ----------
+   12 个字符 = 到期日(payload) + 随机(rand) + 校验(sig)，三组交错排列。
+   好处：管理员在页面里签发的码，直接发给对方就能用，不用重新构建页面，
+   而且每个码可以有各自的到期日。
+   边界：验证密钥明文内嵌在本页，所以它防的是"链接被顺手转发"，
+   防不住刻意破解（源码可见）。 */
+var B32='0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+var LIC_EPOCH=Date.UTC(2020,0,1);
+function b32enc(v,w){var s='';for(var i=0;i<w;i++){s=B32[v&31]+s;v=Math.floor(v/32);}return s;}
+function b32dec(s){var v=0;for(var i=0;i<s.length;i++){var k=B32.indexOf(s[i]);v=v*32+(k<0?0:k);}return v;}
+function licSigSalt(){ return (LICENSE&&LICENSE.sigSalt)||''; }
+function licSig(pay,rnd){
+  return b32enc(parseInt(licH(licSigSalt()+'|'+pay+'|'+rnd).slice(0,5),16),4);
+}
+function licNorm(c){
+  if(!c) return '';
+  c=String(c).toUpperCase().replace(/[-\s]/g,'').replace(/O/g,'0').replace(/I/g,'1').replace(/L/g,'1');
+  var o=''; for(var i=0;i<c.length;i++){ if(B32.indexOf(c[i])>=0) o+=c[i]; }
+  return o;
+}
+function licFmt(c){ return c.slice(0,4)+'-'+c.slice(4,8)+'-'+c.slice(8,12); }
+function licRand4(){ var s=''; for(var i=0;i<4;i++) s+=B32[Math.floor(Math.random()*32)]; return s; }
+function licMake(exp){
+  var p=String(exp).split('-');
+  var days=Math.round((Date.UTC(+p[0],+p[1]-1,+p[2])-LIC_EPOCH)/86400000);
+  var pay=b32enc(days,4), rnd=licRand4(), sg=licSig(pay,rnd), out='';
+  for(var i=0;i<12;i++){ var j=Math.floor(i/3); out+=(i%3===0)?pay[j]:((i%3===1)?rnd[j]:sg[j]); }
+  return out;
+}
+function licParse(code){
+  var c=licNorm(code);
+  if(c.length!==12) return {ok:false,why:'授权码格式不对（应为 12 位）'};
+  var pay=c[0]+c[3]+c[6]+c[9], rnd=c[1]+c[4]+c[7]+c[10], sg=c[2]+c[5]+c[8]+c[11];
+  if(licSig(pay,rnd)!==sg) return {ok:false,why:'授权码无效，请核对后重试'};
+  var d=new Date(LIC_EPOCH+b32dec(pay)*86400000), q=function(n){return ('0'+n).slice(-2)};
+  return {ok:true,expire:d.getUTCFullYear()+'-'+q(d.getUTCMonth()+1)+'-'+q(d.getUTCDate())};
+}
+/* 按 (数量,单位) 算到期日；月/年按日历推进，1月31日+1个月=2月28/29日 */
+function admExpire(val,unit){
+  var d=new Date(), y=d.getFullYear(), m=d.getMonth(), dd=d.getDate();
+  var ny,nm,dim;
+  if(unit==='day')       { return admFmt(new Date(y,m,dd+val)); }
+  else if(unit==='week') { return admFmt(new Date(y,m,dd+val*7)); }
+  else if(unit==='month'){ nm=m+val; ny=y+Math.floor(nm/12); nm=((nm%12)+12)%12;
+                           dim=new Date(ny,nm+1,0).getDate(); return admFmt(new Date(ny,nm,Math.min(dd,dim))); }
+  ny=y+val; dim=new Date(ny,m+1,0).getDate();
+  return admFmt(new Date(ny,m,Math.min(dd,dim)));
+}
+function admFmt(t){ var q=function(n){return ('0'+n).slice(-2)};
+  return t.getFullYear()+'-'+q(t.getMonth()+1)+'-'+q(t.getDate()); }
+/* ---------- 管理员 ---------- */
+function admCfg(){ return (LICENSE&&LICENSE.admin)||null; }
+function admIn(){ try{ return sessionStorage.getItem('lc_admin')==='1'; }catch(e){ return false; } }
+function admInitMenu(){
+  var on=admIn(), has=!!admCfg();
+  var row=$('side-adm'); if(row) row.style.display = has?'':'none';
+  var em=$('m-adm'); if(em && has) em.textContent = on?'已登录':'未登录';
+  /* 独立的「生成授权码」菜单项：登录后常驻在菜单里，关掉弹窗也能再打开 */
+  var g=$('side-admgen'); if(g) g.style.display = (has&&on)?'':'none';
+  /* 管理员本人免激活，菜单里再显示「访问授权」就是多余的 */
+  var l=$('side-lic'); if(l) l.style.display = (on||!LICENSE)?'none':'';
+}
+function admAutoLic(){
+  /* 管理员本人不必再单独激活 */
+  if(!LICENSE) return;
+  var o=licGet(); if(o&&o.code&&licValid()) return;
+  licSet({code:'ADMIN', key:licH(LICENSE.salt+'|ADMIN|'+licFp()), at:Date.now(), exp:''});
+  licInitMenu();
+}
+function admOpen(){ if(!admCfg()){ toast('本页未配置管理员账号'); return; }
+  if(admIn()) admShowPanel(); else admShowLogin(); }
+function admShowPanel(){
+  var a=admCfg()||{};
+  var h='<div class="mh">管理员<span onclick="closeHelp()">×</span></div><div class="mb">';
+  h+='<p style="font-size:13.5px;margin:0 0 14px">已登录：<b style="color:var(--brand)">'+esc(a.user||'admin')+'</b></p>';
+  h+='<div class="btns" style="margin-bottom:14px">'
+    +'<button class="g" onclick="admShowLogin()">重新登录</button></div>';
+  h+='<div class="note" style="padding:10px 0 0">登录状态只在当前标签页有效，'
+    +'关掉页面即退出。<br>要签发授权码，请从菜单里点<b>「生成授权码」</b>。</div>';
+  h+='<div class="btns" style="margin-top:12px"><button class="delbtn" onclick="admLogout()">退出管理员</button></div>';
+  h+='</div>';
+  $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'+h+'</div></div>';
+}
+function admShowLogin(){
+  var h='<div class="mh">管理员登录<span onclick="closeHelp()">×</span></div><div class="mb">';
+  h+='<p style="font-size:12.5px;color:var(--fg7);margin:0 0 12px">'
+    +'登录后可以在页面里直接签发授权码，并设置有效期。</p>';
+  h+='<div style="margin-bottom:8px"><input id="adm-u" type="text" placeholder="用户名" autocomplete="off" '
+    +'style="width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--bd2);border-radius:8px;'
+    +'background:var(--surface);color:var(--fg)"></div>';
+  h+='<div style="margin-bottom:8px"><input id="adm-p" type="password" placeholder="密码" '
+    +'style="width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--bd2);border-radius:8px;'
+    +'background:var(--surface);color:var(--fg)" onkeydown="if(event.key===\'Enter\')admLogin()"></div>';
+  h+='<div id="adm-msg" class="msg"></div>';
+  h+='<div class="btns" style="margin-top:10px"><button class="p" onclick="admLogin()">登录</button>'
+    +'<button class="g" onclick="closeHelp()">取消</button></div>';
+  h+='<div class="note" style="padding:10px 0 0">登录状态只在当前标签页有效，关掉即退出。</div></div>';
+  $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'+h+'</div></div>';
+}
+function admLogin(){
+  var u=(($('adm-u')&&$('adm-u').value)||'').trim();
+  var p=(($('adm-p')&&$('adm-p').value)||'');
+  var box=$('adm-msg'), a=admCfg();
+  function say(t,c){ if(box) box.innerHTML='<div class="'+(c||'e')+'">'+esc(t)+'</div>'; }
+  if(!a){ say('本页未配置管理员账号'); return; }
+  if(!u||!p){ say('请输入用户名和密码'); return; }
+  if(licH('LCADMIN|'+u+'|'+p)!==a.hash){ say('用户名或密码不对'); return; }
+  var blocked=licBlocked();          /* 必须在登录标记写入前判断，否则永远是不阻塞 */
+  try{ sessionStorage.setItem('lc_admin','1'); }catch(e){}
+  admInitMenu(); admAutoLic();
+  if(blocked) boot();          /* 之前是锁屏，登录后要真正进入页面 */
+  admShowGen();
+}
+function admLogout(){
+  try{ sessionStorage.removeItem('lc_admin'); }catch(e){}
+  /* 若本机是靠管理员身份免激活进入的，退出后要回到锁屏，不能继续免费用 */
+  var o=licGet();
+  if(o && o.code==='ADMIN'){ try{ localStorage.removeItem('lc_lic'); }catch(e){} }
+  S.admOut=[];                        /* 清掉本次签发的码，避免退出后还留在内存里 */
+  closeHelp();                        /* 关掉弹窗，否则它会盖住锁屏页 */
+  closeSide();                        /* 侧边菜单也收起来 */
+  admInitMenu(); licInitMenu();
+  /* 退出后若不再满足授权，必须回到锁屏：render 在 blocked 时只写锁屏，
+     但保险起见这里显式重跑一次 boot 的完整分支 */
+  var m=$('main');
+  if(licBlocked()){
+    if(m) m.innerHTML=renderLock();
+    licInitMenu();
+  }else{
+    render();
+  }
+  toast('已退出管理员');
+}
+function admSetUnit(){ var s=$('adm-unit'); if(s) S.admUnit=s.value; admRenderGen(); }
+function admSetVal(){ var i=$('adm-val'); if(i){ var v=parseInt(i.value,10); S.admVal=isNaN(v)?1:Math.max(1,Math.min(999,v)); } admRenderGen(); }
+function admSetN(){ var s=$('adm-n'); if(s) S.admN=parseInt(s.value,10)||1; admRenderGen(); }
+function admRenderGen(){
+  var el=$('adm-prev'); if(el){
+    el.innerHTML='到期日 <b style="color:var(--brand);font-size:15px">'+admExpire(S.admVal,S.admUnit)+'</b>';
+  }
+}
+function admShowGen(){
+  var un=[['day','天'],['week','周'],['month','月'],['year','年']];
+  var h='<div class="mh">生成授权码<span onclick="closeHelp()">×</span></div><div class="mb">';
+  h+='<div style="font-size:13px;font-weight:600;margin-bottom:8px">有效期</div>';
+  h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">'
+    +'<input id="adm-val" type="number" min="1" max="999" value="'+S.admVal+'" oninput="admSetVal()" '
+    +'style="width:74px;padding:9px 10px;font-size:14px;border:1px solid var(--bd2);border-radius:8px;'
+    +'background:var(--surface);color:var(--fg)">';
+  h+='<select id="adm-unit" onchange="admSetUnit()" style="flex:1;padding:9px 10px;font-size:14px;'
+    +'border:1px solid var(--bd2);border-radius:8px;background:var(--surface);color:var(--fg)">';
+  for(var i=0;i<un.length;i++) h+='<option value="'+un[i][0]+'"'+(S.admUnit===un[i][0]?' selected':'')+'>'+un[i][1]+'</option>';
+  h+='</select></div>';
+  h+='<div id="adm-prev" style="font-size:12.5px;color:var(--fg7);margin-bottom:12px"></div>';
+  h+='<div style="font-size:13px;font-weight:600;margin-bottom:8px">生成数量</div>';
+  h+='<select id="adm-n" onchange="admSetN()" style="width:100%;padding:9px 10px;font-size:14px;margin-bottom:12px;'
+    +'border:1px solid var(--bd2);border-radius:8px;background:var(--surface);color:var(--fg)">';
+  for(var n=1;n<=20;n++) h+='<option value="'+n+'"'+(S.admN===n?' selected':'')+'>'+n+' 个</option>';
+  h+='</select>';
+  h+='<div class="btns" style="margin-bottom:12px"><button class="p" onclick="admGen()">生成</button></div>';
+  h+='<div id="adm-out"></div>';
+  h+='<div class="note" style="padding:10px 0 0">生成的码<b>直接发给对方即可</b>，不用重新构建或上传页面。'
+    +'每个码自带到期日，到期后自动失效。<br>'
+    +'注意：签发密钥也在这份 HTML 里，所以它拦得住随手转发，拦不住刻意破解。</div>';
+  h+='<div class="btns" style="margin-top:12px"><button class="delbtn" onclick="admLogout()">退出管理员</button></div>';
+  h+='</div>';
+  $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'+h+'</div></div>';
+  admRenderGen(); admDrawOut();
+}
+function admGen(){
+  var exp=admExpire(S.admVal,S.admUnit);
+  S.admOut=[];
+  for(var i=0;i<S.admN;i++) S.admOut.push({code:licFmt(licMake(exp)), exp:exp});
+  admDrawOut(); toast('已生成 '+S.admN+' 个授权码');
+}
+function admDrawOut(){
+  var box=$('adm-out'); if(!box) return;
+  if(!S.admOut.length){ box.innerHTML=''; return; }
+  var h='<div style="font-size:13px;font-weight:600;margin-bottom:6px">本次生成（到期 '
+    +esc(S.admOut[0].exp)+'）</div>';
+  for(var i=0;i<S.admOut.length;i++){
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd3)">'
+      +'<span style="flex:1;font-family:monospace;font-size:14px;letter-spacing:1px">'+esc(S.admOut[i].code)+'</span>'
+      +'<button style="padding:5px 10px;border-radius:6px;border:1px solid var(--brand);background:var(--surface);'
+      +'color:var(--brand);font-size:12px" onclick="admCopy('+i+')">复制</button></div>';
+  }
+  h+='<div class="btns" style="margin-top:10px"><button onclick="admCopyAll()">复制全部</button>'
+    +'<button class="g" onclick="admSaveTxt()">保存为名单</button></div>';
+  box.innerHTML=h;
+}
+function admCopy(i){
+  var t=S.admOut[i]?S.admOut[i].code:'';
+  admClip(t,'已复制第 '+(i+1)+' 个');
+}
+function admCopyAll(){
+  var t=S.admOut.map(function(o){return o.code+'（到期 '+o.exp+'）';}).join('\n');
+  admClip(t,'已复制全部 '+S.admOut.length+' 个');
+}
+function admSaveTxt(){
+  var txt='彩票统计页面 · 授权码名单\n到期日：'+(S.admOut[0]?S.admOut[0].exp:'')+'\n'
+    +'------------------------------------------\n'
+    +S.admOut.map(function(o,i){return ('  '+(i+1)).slice(-3)+'. '+o.code;}).join('\n')
+    +'\n------------------------------------------\n';
+  try{
+    var b=new Blob([txt],{type:'text/plain;charset=utf-8'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download='授权码名单.txt'; a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },2000);
+    toast('已下载名单');
+  }catch(e){ toast('下载失败，请手动抄下上面的码'); }
+}
+function admClip(t,ok){
+  copySmart(t, ok, '授权码');
+}
+function licExpired(){ return !!(LICENSE && LICENSE.expire && licToday() > LICENSE.expire); }
+function licGet(){ try{ return JSON.parse(localStorage.getItem('lc_lic')||'null'); }catch(e){ return null; } }
+function licSet(o){ try{ localStorage.setItem('lc_lic', JSON.stringify(o)); }catch(e){} }
+function licValid(){
+  if(!LICENSE) return true;
+  if(admIn()) return true;                 /* 管理员本人免激活 */
+  var o=licGet();
+  if(!o || !o.code || !o.key) return false;
+  /* 自校验码：用它自带的到期日；预置码：用全局到期日 */
+  if(o.exp && /^\d{4}-\d{2}-\d{2}$/.test(o.exp)){ if(licToday()>o.exp) return false; }
+  else if(licExpired()) return false;
+  return o.key === licH(LICENSE.salt+'|'+o.code+'|'+licFp());
+}
+function licBlocked(){ return !!LICENSE && !licValid(); }
+/* 先查预置码表，再按自校验码解析；返回 {ok,expire,why} */
+function licCheck(code){
+  if(!LICENSE) return {ok:true, expire:''};
+  var raw=String(code||'').trim().toUpperCase(), c=licNorm(code);
+  var tries=[]; if(raw) tries.push(raw); if(c&&c!==raw) tries.push(licFmt(c));
+  for(var i=0;i<tries.length;i++){
+    if((LICENSE.codes||[]).indexOf(licH(LICENSE.salt+'|'+tries[i]))>=0){
+      if(licExpired()) return {ok:false, why:'授权已于 '+LICENSE.expire+' 到期，请联系管理员续期'};
+      return {ok:true, expire:LICENSE.expire||''};
+    }
+  }
+  var r=licParse(c);
+  if(!r.ok) return {ok:false, why:r.why};
+  if(licToday()>r.expire) return {ok:false, why:'该授权码已于 '+r.expire+' 到期，请联系管理员续期'};
+  return {ok:true, expire:r.expire};
+}
+function licActivate(){
+  var el=$('lic-in'), code=((el&&el.value)||'').trim().toUpperCase();
+  var box=$('lic-msg');
+  function say(t,c){ if(box) box.innerHTML='<div class="'+(c||'e')+'">'+esc(t)+'</div>'; }
+  if(!code){ say('请输入授权码'); return; }
+  var r=licCheck(code);
+  if(!r.ok){ say(r.why||'授权码无效，请核对后重试'); return; }
+  licSet({code:code, key:licH(LICENSE.salt+'|'+code+'|'+licFp()), at:Date.now(), exp:r.expire||''});
+  licInitMenu(); boot();
+}
+function licDeactivate(){
+  try{ localStorage.removeItem('lc_lic'); }catch(e){}
+  licInitMenu(); render();
+}
+function licCopyCode(){
+  var o=licGet(); if(!o||!o.code) return;
+  var exp=(o.exp&&/^\d{4}-/.test(o.exp))?o.exp:((LICENSE&&LICENSE.expire)||'—');
+  var txt='授权码 '+o.code+'（到期 '+exp+'）';
+  copySmart(txt, '已复制授权码', '授权码');
+}
+function licInitMenu(){
+  var row=$('side-lic'); if(!row) return;
+  if(!LICENSE){ row.style.display='none'; admInitMenu(); return; }
+  row.style.display='';
+  var em=$('m-lic'); if(em){
+    var o=licGet(), ex=(o&&o.exp&&/^\d{4}-/.test(o.exp))?o.exp:LICENSE.expire;
+    em.textContent = licValid() ? ('已激活 · 到 '+ex)
+      : (admIn()?'管理员已登录':((o&&o.exp&&licToday()>o.exp)?'已到期':(licExpired()?'已到期':'未激活')));
+  }
+  admInitMenu();
+}
+function renderLock(){
+  var h='<div class="card" style="text-align:center;padding:30px 18px">';
+  h+='<div style="font-size:17px;font-weight:700;margin-bottom:8px">🔒 需要授权才能使用</div>';
+  h+='<div style="font-size:13px;color:#888;line-height:1.8">'
+    +'本页面已开启访问限制。<br>请输入管理员发给你的<b>授权码</b>，'
+    +'激活后即可正常使用（每台设备一次）。</div>';
+  h+='<div style="margin:18px 0 10px"><input id="lic-in" type="text" '
+    +'placeholder="请输入授权码" autocomplete="off" spellcheck="false" '
+    +'style="width:100%;max-width:280px;padding:11px 12px;font-size:15px;text-align:center;'
+    +'letter-spacing:1px;border:1px solid var(--bd2);border-radius:8px;'
+    +'background:var(--surface);color:var(--fg);text-transform:uppercase" '
+    +'onkeydown="if(event.key===\'Enter\')licActivate()"></div>';
+  h+='<div id="lic-msg" class="msg"></div>';
+  h+='<div style="margin-top:14px"><button class="p" style="min-width:120px" '
+    +'onclick="licActivate()">激活</button></div>';
+  h+='</div>';
+  return h;
+}
 var S = {noApi:STATIC_BUILD, lot:'ssq', tab:'list',
   listSort:{k:0,dir:-1}, listLimit:60,
   trendNum:1, trendScope:'month', distLimit:20,
   fSort:{red:{k:1,dir:1}, blue:{k:1,dir:1}},
   heatWin:'month', heatSort:'num',
-  pickRed:[], pickBlue:[]};
+  pickRed:[], pickBlue:[],
+  /* 中奖核对 */
+  chkRed:[], chkBlue:[], chkMode:'latest', chkIssue:'',
+  /* 开奖记录搜索 */
+  listQ:'',
+  /* 条件机选 */
+  genCount:1, genOpen:false, genSum:null, genOdd:'any', genBig:'any', genZone:'any', genMsg:'',
+  /* 选号记录：删除两步确认（不用 confirm，某些环境会被拦截导致点了没反应） */
+  recDel:-1, recClear:false,
+  /* 按位玩法（3D / 排列三） */
+  pSort:{k:0,dir:1}, pick3:[null,null,null], chk3:[null,null,null], fs3:[[],[],[]],
+  /* 按位玩法的出现次数排序：三位各自独立，默认按出现次数升序 */
+  fSort3:{p0:{k:1,dir:1}, p1:{k:1,dir:1}, p2:{k:1,dir:1}},
+  /* 复式 / 胆拖 */
+  fsMode:'fushi', fsRed:[], fsBlue:[], fsDan:[], fsTuo:[],
+  /* 管理员签发授权码 */
+  admUnit:'month', admVal:3, admN:1, admOut:[]};
 
 function $(id){return document.getElementById(id)}
 /* 期号短标：双色球 2026122→26122，大乐透 26121→26121，统一 5 位，避免两者混淆 */
@@ -212,11 +770,59 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function pad(n){return n<10?'0'+n:''+n}
 function api(p){return fetch(API+p, {cache:'no-store'}).then(function(r){
   if(!r.ok) throw new Error('HTTP '+r.status); return r.json();})}
-function numColor(n,max){ return 'hsl('+Math.round(((n-1)*137.508)%360)+',68%,46%)'; }
+function numColor(n,max){
+  var hu=Math.round(((n-1)*137.508)%360);
+  /* 深色底上适当提亮、略降饱和，避免刺眼又不失辨识度 */
+  return isDark() ? 'hsl('+hu+',58%,54%)' : 'hsl('+hu+',68%,46%)';
+}
+/* SVG 内写死的颜色无法被 CSS 变量接管（fill/stroke 属性优先级最高），
+   这里按当前主题取一整套值，彻底去掉深色模式下的浅色横带与灰白块 */
+function svgInk(){
+  var d=isDark();
+  return {
+    zebra:   d?'#232323':'#fbfbfb',   /* 奇偶行底纹 */
+    blueOff: d?'#2b2b2b':'#f2f2f2',   /* 蓝球未命中 */
+    blueTxt: d?'#8f8f8f':'#aaa',
+    head:    d?'#8a8a8a':'#aaa',      /* 表头「期号/开奖日期」 */
+    issue:   d?'#c8c8c8':'#666',
+    date:    d?'#7d7d7d':'#aaa',
+    blueLbl: d?'#9a9a9a':'#999'
+  };
+}
 /* 视口可用宽度：让 33/35 列尽量在一屏内放下，避免横滑 */
 function vw(){
   try{ return (document.documentElement&&document.documentElement.clientWidth)||window.innerWidth||375; }
   catch(e){ return 375; }
+}
+
+/* ---------- 本机缓存：二次打开不必重新解析 227 KB ---------- */
+var LC_OK=(function(){ try{ localStorage.setItem('__lc','1'); localStorage.removeItem('__lc'); return true; }catch(e){ return false; } })();
+function lcStamp(d){
+  try{ var r=d&&d.rows; return (r?r.length:0)+'_'+((r&&r[0])?String(r[0][0]):'')+'_'+String(d.updatedAt||0); }
+  catch(e){ return ''; }
+}
+function lcWrite(lot,d){
+  if(!LC_OK||!d||!d.rows) return;
+  try{
+    localStorage.setItem('lcd_'+lot, JSON.stringify(d));
+    localStorage.setItem('lcst_'+lot, lcStamp(d));
+  }catch(e){
+    /* 配额不足：清掉旧缓存，只留当前彩种 */
+    try{ localStorage.removeItem('lcd_'+(lot==='ssq'?'dlt':'ssq'));
+         localStorage.removeItem('lcst_'+(lot==='ssq'?'dlt':'ssq'));
+         localStorage.setItem('lcd_'+lot, JSON.stringify(d));
+         localStorage.setItem('lcst_'+lot, lcStamp(d)); }catch(e2){}
+  }
+}
+function lcRead(lot){
+  if(!LC_OK) return null;
+  try{
+    var s=localStorage.getItem('lcd_'+lot);
+    if(!s) return null;
+    var d=JSON.parse(s);
+    if(!d||!d.rows||!d.rows.length) return null;
+    d.fromCache=true; return d;
+  }catch(e){ return null; }
 }
 
 /* ---------- 加载 ---------- */
@@ -236,11 +842,23 @@ function load(lot, force){
     return api('/history?lot='+lot+(force?'&force=1':''));
   }).then(function(d){
     if(!d || !d.rows || !d.rows.length) throw new Error('空数据');
-    D[lot]=d; return d;
+    D[lot]=d; lcWrite(lot,d); return d;
   });
 }
 function ensure(lot){
   if(D[lot]) return Promise.resolve(D[lot]);
+  /* 非内嵌版：先用本机缓存立刻出画面，再后台静默拉新数据 */
+  if(typeof EMBEDDED_META==='undefined'){
+    var c=lcRead(lot);
+    if(c){
+      D[lot]=c;
+      try{ render(); }catch(e){}
+      load(lot).then(function(d){
+        if(lcStamp(d)!==lcStamp(c)){ D[lot]=d; lcWrite(lot,d); if(S.lot===lot){ try{ render(); }catch(e){} } }
+      }).catch(function(){});
+      return Promise.resolve(c);
+    }
+  }
   showLoading();
   return load(lot).catch(function(e1){
     /* 静态模式下没有后端可重试，直接报错；有后端时强制刷新重试一次 */
@@ -269,8 +887,10 @@ function sumRed(r){var s=0;for(var i=0;i<r[2].length;i++)s+=r[2][i];return s}
 function fmtBalls(r,big){
   var h='<div class="balls">', c=big?'b r big':'b r', cb=big?'b bl big':'b bl';
   for(var i=0;i<r[2].length;i++) h+='<span class="'+c+'">'+pad(r[2][i])+'</span>';
-  h+='<span class="sep">+</span>';
-  for(var j=0;j<r[3].length;j++) h+='<span class="'+cb+'">'+pad(r[3][j])+'</span>';
+  if(r[3] && r[3].length){
+    h+='<span class="sep">+</span>';
+    for(var j=0;j<r[3].length;j++) h+='<span class="'+cb+'">'+pad(r[3][j])+'</span>';
+  }
   return h+'</div>';
 }
 function rbOverlap(r){
@@ -304,10 +924,23 @@ function listRows(){
   });
   return arr;
 }
+function setListQ(v){ S.listQ=v; S.listLimit=60; render(); }
 function renderList(){
-  var all=listRows(), show=all.slice(0,S.listLimit);
+  var all=listRows(), q=String(S.listQ||'').trim();
+  if(q){
+    all=all.filter(function(r){
+      return String(r[0]).indexOf(q)>=0 || String(r[1]).indexOf(q)>=0;
+    });
+  }
+  var show=all.slice(0,S.listLimit);
   var cols=['期号','开奖日期','开奖号码','奇偶比','和值'];
-  var h='<div class="card"><div class="bar"><label>共 '+all.length+' 期</label>'
+  var h='<div class="card">'
+    +'<div class="frow" style="padding:10px 12px 0;margin-bottom:0">'
+    +'<input class="ipt wide" id="lq" type="text" inputmode="numeric" placeholder="搜索期号或日期，如 2026122 或 2026-10-25" '
+    +'value="'+esc(S.listQ)+'" oninput="setListQ(this.value)">'
+    +(q?'<span style="font-size:12.5px;color:#c33;cursor:pointer;padding:7px 4px" onclick="setListQ(\'\')">清除</span>':'')
+    +'</div>'
+    +'<div class="bar"><label>'+(q?('匹配 <b>'+all.length+'</b> 期'):('共 '+all.length+' 期'))+'</label>'
     +'<label style="color:#aaa;font-size:12px">默认期号降序 ▼，点击表头切换</label></div>'
     +'<div class="scroll"><table><thead><tr>';
   for(var c=0;c<cols.length;c++)
@@ -320,6 +953,8 @@ function renderList(){
       +'<td>'+fmtBalls(r)+'</td><td>'+oddStr(r)+'</td><td>'+sumRed(r)+'</td></tr>';
   }
   h+='</tbody></table></div>';
+  if(q && !all.length)
+    h+='<div class="empty">没有匹配的期号<br><span style="font-size:12px">试试输完整期号，如 '+D[S.lot].rows[D[S.lot].rows.length-1][0]+'</span></div>';
   if(S.listLimit<all.length)
     h+='<button class="more" onclick="S.listLimit+=60;render()">加载更多（还有 '+(all.length-S.listLimit)+' 期）</button>';
   h+='<div class="note">黄底行 = 该期'+D[S.lot].blueLabel+'与'+D[S.lot].redLabel+'号码有重合</div></div>';
@@ -365,6 +1000,7 @@ function distChart(rows,d,total,lim){
   var cw=Math.max(11, Math.min(20, (avail-padL-6)/max));
   var rh=Math.max(26, Math.min(30, cw+11));   /* 两行文字需更高行距 */
   var H=headH+rows.length*rh+8, W=padL+max*cw+6;
+  var ink=svgInk();
   var s='<div class="svgwrap" style="overflow-x:auto"><svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
   /* 顶部号码彩条 */
   for(var n=1;n<=max;n++){
@@ -373,17 +1009,17 @@ function distChart(rows,d,total,lim){
     s+='<text x="'+(x+cw/2)+'" y="'+(16)+'" font-size="8" fill="#fff" text-anchor="middle"'
       +' font-weight="600" pointer-events="none">'+n+'</text>';
   }
-  s+='<text x="'+xr+'" y="10" font-size="7.5" fill="#aaa" text-anchor="end">期号</text>';
-  s+='<text x="'+xr+'" y="21" font-size="7.5" fill="#aaa" text-anchor="end">开奖日期</text>';
+  s+='<text x="'+xr+'" y="10" font-size="7.5" fill="'+ink.head+'" text-anchor="end">期号</text>';
+  s+='<text x="'+xr+'" y="21" font-size="7.5" fill="'+ink.head+'" text-anchor="end">开奖日期</text>';
   /* 逐期 */
   for(var i=0;i<rows.length;i++){
     var y=headH+i*rh, cy=y+rh/2;
-    if(i%2===1) s+='<rect x="0" y="'+y+'" width="'+W+'" height="'+rh+'" fill="#fbfbfb"/>';
+    if(i%2===1) s+='<rect x="0" y="'+y+'" width="'+W+'" height="'+rh+'" fill="'+ink.zebra+'"/>';
     /* 第一行：期号（与开奖记录完全一致） */
-    s+='<text x="'+xr+'" y="'+(cy-2)+'" font-size="8" fill="#666" text-anchor="end"'
+    s+='<text x="'+xr+'" y="'+(cy-2)+'" font-size="8" fill="'+ink.issue+'" text-anchor="end"'
       +' font-weight="600">'+rows[i][0]+'</text>';
     /* 第二行：完整开奖日期（含年份） */
-    s+='<text x="'+xr+'" y="'+(cy+9)+'" font-size="6.8" fill="#aaa" text-anchor="end">'
+    s+='<text x="'+xr+'" y="'+(cy+9)+'" font-size="6.8" fill="'+ink.date+'" text-anchor="end">'
       +rows[i][1]+'</text>';
     var arr=rows[i][2].slice().sort(function(a,b){return a-b});
     for(var k2=0;k2<arr.length;k2++){
@@ -398,13 +1034,13 @@ function distChart(rows,d,total,lim){
   var bw=Math.max(9,Math.min(16,(avail-padL-6)/d.blueMax));
   var bh=20, bH=bh+6, bW=padL+d.blueMax*bw+6;
   s+='<div class="svgwrap" style="overflow-x:auto"><svg width="'+bW+'" height="'+bH+'" viewBox="0 0 '+bW+' '+bH+'">';
-  s+='<text x="'+xr+'" y="'+(bh/2+4)+'" font-size="8.5" fill="#999" text-anchor="end">'+d.blueLabel+'</text>';
+  s+='<text x="'+xr+'" y="'+(bh/2+4)+'" font-size="8.5" fill="'+ink.blueLbl+'" text-anchor="end">'+d.blueLabel+'</text>';
   for(var b=1;b<=d.blueMax;b++){
     var bx=padL+(b-1)*bw;
     var hit=(rows[0][3][0]===b);
     s+='<rect x="'+(bx+0.5)+'" y="2" width="'+(bw-2)+'" height="'+(bh-2)+'" rx="3"'
-      +' fill="'+(hit?'#2b6cd4':'#f2f2f2')+'"/>';
-    s+='<text x="'+(bx+bw/2)+'" y="'+(bh/2+3.5)+'" font-size="8" fill="'+(hit?'#fff':'#aaa')+'"'
+      +' fill="'+(hit?'#2b6cd4':ink.blueOff)+'"/>';
+    s+='<text x="'+(bx+bw/2)+'" y="'+(bh/2+3.5)+'" font-size="8" fill="'+(hit?'#fff':ink.blueTxt)+'"'
       +' text-anchor="middle" font-weight="'+(hit?'700':'400')+'">'+b+'</text>';
   }
   s+='</svg></div>';
@@ -614,15 +1250,17 @@ function togglePick(n,isBlue){
   render();
 }
 function clearPick(){ S.pickRed=[];S.pickBlue=[];render(); }
+/* 从 1..max 中随机取 cnt 个不重复号码，升序返回 */
+function randN(cnt,max){
+  var pool=[],out=[],i;
+  for(i=1;i<=max;i++) pool.push(i);
+  for(var j=0;j<cnt;j++) out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  return out.sort(function(a,b){return a-b});
+}
 function randPick(){
-  var d=D[S.lot], pick=function(max,cnt){
-    var pool=[],out=[],i;
-    for(i=1;i<=max;i++) pool.push(i);
-    for(var j=0;j<cnt;j++) out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
-    return out.sort(function(a,b){return a-b});
-  };
-  S.pickRed=pick(d.redMax,d.redCount);
-  S.pickBlue=pick(d.blueMax,d.blueCount);
+  var d=D[S.lot];
+  S.pickRed=randN(d.redCount,d.redMax);
+  S.pickBlue=randN(d.blueCount,d.blueMax);
   render();
 }
 /* 添加前的验证：blocking 错误 / 提醒 */
@@ -648,11 +1286,188 @@ function addBet(){
   if(!c.ok){ alert(c.err.join('\n')); return; }
   var a=getBets();
   a.push({r:S.pickRed.slice(), b:S.pickBlue.slice(), t:Date.now()});
-  saveBets(a); S.pickRed=[];S.pickBlue=[];
+  saveBets(a); addRec(S.lot, a[a.length-1]); S.pickRed=[];S.pickBlue=[];
   render();
 }
 function delBet(i){ var a=getBets(); a.splice(i,1); saveBets(a); render(); }
 function clearBets(){ saveBets([]); render(); }
+
+/* ---------- 我的选号记录（长期归档） ---------- */
+/* 与「我的选号」分开：选号是当期工作列表，会被清掉；记录长期保留，可回溯 */
+function getRecs(){ try{ return JSON.parse(localStorage.getItem('lc_rec')||'[]'); }catch(e){ return []; } }
+function saveRecs(a){ try{ localStorage.setItem('lc_rec', JSON.stringify(a)); }catch(e){} }
+function addRec(lot,bet,bought){
+  var a=getRecs();
+  a.push({lot:lot, r:bet.r.slice(), b:bet.b.slice(), t:bet.t||Date.now(),
+          bought:bought?1:0});
+  if(a.length>500) a=a.slice(a.length-500);   /* 最多留 500 条 */
+  saveRecs(a);
+}
+function delRec(i){
+  if(S.recDel!==i){ S.recDel=i; S.recClear=false; render(); return; }  /* 第一次点：进入确认态 */
+  var a=getRecs();
+  if(!a[i]){ S.recDel=-1; render(); return; }
+  a.splice(i,1); saveRecs(a); S.recDel=-1; render();
+  if(typeof toast==='function') toast('已删除');
+}
+function cancelRecDel(){ S.recDel=-1; S.recClear=false; render(); }
+/* 选号 ≠ 购买：默认记为「未购买」，真买了再点一下改成「已购买」 */
+function toggleBought(i){
+  var a=getRecs();
+  if(!a[i]) return;
+  a[i].bought = a[i].bought?0:1;
+  saveRecs(a); render();
+}
+function clearRecs(){
+  if(!S.recClear){ S.recClear=true; S.recDel=-1; render(); return; }
+  saveRecs([]); S.recClear=false; render();
+  if(typeof toast==='function') toast('已清空全部记录');
+}
+/* 记录的结果：用该彩种「最新一期」比对；保存时间晚于开奖时刻则待开奖 */
+var LOTNAME={ssq:'双色球', dlt:'大乐透', '3d':'福彩3D', pls:'排列三'};
+function recResult(rec){
+  var d=D[rec.lot]; if(!d||!d.rows||!d.rows.length) return null;
+  var last=d.rows[d.rows.length-1], i;
+  if(rec.t && rec.t > drawMs(last,rec.lot)) return {state:'wait'};
+  var rk={},k=0,hb=0,bk={};
+  for(i=0;i<last[2].length;i++) rk[last[2][i]]=1;
+  for(i=0;i<rec.r.length;i++) if(rk[rec.r[i]]) k++;
+  for(i=0;i<last[3].length;i++) bk[last[3][i]]=1;
+  for(i=0;i<rec.b.length;i++) if(bk[rec.b[i]]) hb++;
+  return {state:'done', p:prizeOf(rec.lot,k,hb), k:k, hb:hb, issue:last[0]};
+}
+function fmtTs(t){
+  var x=new Date(t), p=function(n){return ('0'+n).slice(-2)};
+  return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate())+' '+p(x.getHours())+':'+p(x.getMinutes());
+}
+/* 筛选：彩种 / 购买状态 / 开奖状态 / 日期区间。返回原始下标，保证删除、标记仍对准 */
+function recFilterGet(){
+  if(!S.recF) S.recF={lot:'',buy:'',res:'',from:'',to:''};
+  return S.recF;
+}
+function recFiltered(){
+  var recs=getRecs(), f=recFilterGet(), out=[], i;
+  for(i=0;i<recs.length;i++){
+    var rc=recs[i];
+    if(f.lot && rc.lot!==f.lot) continue;
+    if(f.buy==='1' && !rc.bought) continue;
+    if(f.buy==='0' && rc.bought)  continue;
+    var r=recResult(rc), st=r?r.state:'none';   /* wait=待开奖 done=已开奖 */
+    if(f.res==='wait' && st!=='wait') continue;
+    if(f.res==='done' && st!=='done') continue;
+    var ds=fmtTs(rc.t).slice(0,10);
+    if(f.from && ds < f.from) continue;
+    if(f.to   && ds > f.to)   continue;
+    out.push(i);
+  }
+  return out;
+}
+function setRecF(k,v){ recFilterGet()[k]=v; S.recDel=-1; S.recClear=false; render(); }
+function resetRecF(){ S.recF={lot:'',buy:'',res:'',from:'',to:''}; S.recDel=-1; S.recClear=false; render(); }
+function renderRecFilter(){
+  var f=recFilterGet(), h='';
+  h+='<div class="recf">';
+  h+='<div class="frow"><span class="flab">彩种</span><div class="rdo">';
+  var lots=[['','全部'],['ssq','双色球'],['dlt','大乐透'],['3d','福彩3D'],['pls','排列三']];
+  for(var i=0;i<lots.length;i++)
+    h+='<span class="'+(f.lot===lots[i][0]?'on':'')+'" onclick="setRecF(\'lot\',\''+lots[i][0]+'\')">'+lots[i][1]+'</span>';
+  h+='</div></div>';
+  h+='<div class="frow"><span class="flab">购买</span><div class="rdo">';
+  var buys=[['','全部'],['1','已购买'],['0','未购买']];
+  for(i=0;i<buys.length;i++)
+    h+='<span class="'+(f.buy===buys[i][0]?'on':'')+'" onclick="setRecF(\'buy\',\''+buys[i][0]+'\')">'+buys[i][1]+'</span>';
+  h+='</div></div>';
+  h+='<div class="frow"><span class="flab">开奖</span><div class="rdo">';
+  var res=[['','全部'],['wait','待开奖'],['done','已开奖']];
+  for(i=0;i<res.length;i++)
+    h+='<span class="'+(f.res===res[i][0]?'on':'')+'" onclick="setRecF(\'res\',\''+res[i][0]+'\')">'+res[i][1]+'</span>';
+  h+='</div></div>';
+  h+='<div class="frow"><span class="flab">日期</span>'
+    +'<input type="date" class="dti" value="'+esc(f.from)+'" onchange="setRecF(\'from\',this.value)">'
+    +'<span style="color:#aaa;padding:0 2px">至</span>'
+    +'<input type="date" class="dti" value="'+esc(f.to)+'" onchange="setRecF(\'to\',this.value)"></div>';
+  var on = f.lot||f.buy||f.res||f.from||f.to;
+  h+='<div class="btns" style="margin-top:2px">'
+    +'<button class="g" onclick="resetRecF()">'+(on?'清除筛选':'重置')+'</button></div>';
+  h+='</div>';
+  return h;
+}
+function renderRec(){
+  var recs=getRecs(), h='';
+  h+='<div class="sec">我的选号记录</div>'
+    +'<div style="font-size:12px;color:#888;padding:0 12px 8px">'
+    +'每次添加的选号都会自动归档到这里并长期保留（存在本机浏览器，最多 500 条），'
+    +'换设备或清理浏览器数据会丢失。<br>'
+    +'<b>选号不等于购买</b>：新记录默认「未购买」，真的买了请点「标记为已买」；'
+    +'没买的可点「删除」移除。</div>';
+  if(!recs.length)
+    return h+'<div class="empty">还没有选号记录<br><span style="font-size:12px">'
+      +'在「我的选号」里添加号码后会自动出现在这里</span></div>';
+  h+=renderRecFilter();
+  var idx=recFiltered();
+  var won=0, amt=0, pend=0, bought=0, i;
+  for(i=0;i<idx.length;i++){
+    var rc0=recs[idx[i]];
+    if(rc0.bought) bought++;
+    var rr=recResult(rc0);
+    if(!rr) continue;
+    if(rr.state==='wait'){ pend++; continue; }
+    if(rr.p){ won++; if(rr.p.amt) amt+=rr.p.amt; }
+  }
+  var sum='';
+  if(won) sum+=' 🎉 <b>'+won+'</b> 注曾中奖'+(amt?('，固定奖共 <b>'+amt+'</b> 元'):'');
+  if(pend) sum+=' ⏳ <b>'+pend+'</b> 注待开奖';
+  if(!won && !pend) sum=' 暂无中奖记录';
+  h+='<div class="bres" style="margin:8px 12px 0">'
+    +(idx.length===recs.length
+        ? '共 <b>'+recs.length+'</b> 条记录'
+        : '筛选出 <b>'+idx.length+'</b> 条（共 '+recs.length+' 条）')
+    +' · 已买 <b>'+bought+'</b> · 未买 <b>'+(idx.length-bought)+'</b>：'+sum+'</div>';
+  if(!idx.length)
+    return h+'<div class="empty">没有符合条件的记录<br><span style="font-size:12px">'
+      +'试试放宽筛选条件，或点「清除筛选」</span></div>';
+  if(S.recClear)
+    h+='<div class="betops" style="margin:8px 12px 0">'
+      +'<button class="delbtn confirm" onclick="clearRecs()">确认清空全部</button>'
+      +'<button onclick="cancelRecDel()">取消</button></div>';
+  else
+    h+='<div class="betops" style="margin:8px 12px 0">'
+      +'<button onclick="clearRecs()">清空全部记录</button></div>';
+  for(var q=idx.length-1;q>=0;q--){
+    i=idx[q];
+    var rc=recs[i], d=D[rc.lot], r=recResult(rc);
+    var nm=d?d.name:(LOTNAME[rc.lot]||rc.lot);
+    var isB=rc.bought?1:0;
+    h+='<div class="betcard rec-'+rc.lot+'">'
+      +'<div class="rechead"><span class="lotbadge lb-'+rc.lot+'">'+esc(nm)+'</span>'
+      +'<span class="rects">'+fmtTs(rc.t)+'</span>'
+      +'<span class="buyflag '+(isB?'on':'')+'">'
+      +(isB?'✅ 已购买':'⚪ 未购买')+'</span></div>'
+      +'<div style="margin-top:6px">'+fmtBalls({2:rc.r,3:rc.b},true)+'</div>';
+    if(!d) h+='<div class="bres">切到「'+esc(nm)+'」标签后显示对奖结果</div>';
+    else if(!r) h+='<div class="bres">数据未加载</div>';
+    else if(r.state==='wait')
+      h+='<div class="bres">⏳ <b>待开奖</b> · 等下一期开奖后自动比对</div>';
+    else if(r.p)
+      h+='<div class="bres hit">🎉 <span class="bn">'+r.p.name+'</span>'
+        +(r.p.amt?' · <span class="ba">'+r.p.amt+' 元</span>':' · 浮动奖金')
+        +' <span style="opacity:.75">（'+esc(r.issue)+' 期 · 中 '+r.k+'+'+r.hb+'）</span></div>';
+    else
+      h+='<div class="bres">未中奖 <span style="opacity:.75">（'+esc(r.issue)
+        +' 期 · 中 '+r.k+'+'+r.hb+'）</span></div>';
+    if(S.recDel===i)
+      h+='<div class="betops" style="margin:8px 0 0">'
+        +'<button class="delbtn confirm" onclick="delRec('+i+')">确认删除</button>'
+        +'<button onclick="cancelRecDel()">取消</button></div>';
+    else
+      h+='<div class="betops" style="margin:8px 0 0">'
+        +'<button onclick="toggleBought('+i+')">'
+        +(isB?'改回「未购买」':'标记为已买')+'</button>'
+        +'<button class="delbtn" onclick="delRec('+i+')">删除</button></div>';
+    h+='</div>';
+  }
+  return h;
+}
 
 function analyze(reds,blues){
   var d=D[S.lot], rows=d.rows;
@@ -687,6 +1502,586 @@ function ssqPrize(k,hb){
   if(hb)    return {name:'六等奖',amt:5};
   return null;
 }
+/* 大乐透：前区 f 个 + 后区 b 个。一/二/三等奖为浮动奖，四~九等奖固定 */
+function dltPrize(f,b){
+  if(f===5&&b===2) return {name:'一等奖',amt:null};
+  if(f===5&&b===1) return {name:'二等奖',amt:null};
+  if(f===5&&b===0) return {name:'三等奖',amt:null};
+  if(f===4&&b===2) return {name:'四等奖',amt:3000};
+  if(f===4&&b===1) return {name:'五等奖',amt:300};
+  if(f===3&&b===2) return {name:'六等奖',amt:200};
+  if(f===4&&b===0) return {name:'七等奖',amt:100};
+  if((f===3&&b===1)||(f===2&&b===2)) return {name:'八等奖',amt:15};
+  if((f===3&&b===0)||(f===2&&b===1)||(f===1&&b===2)||(f===0&&b===2)) return {name:'九等奖',amt:5};
+  return null;
+}
+/* 统一入口：根据彩种算奖级 */
+function prizeOf(lot,rh,bh){
+  return lot==='ssq' ? ssqPrize(rh,bh) : dltPrize(rh,bh);
+}
+
+/* ========== 开奖日程 / 倒计时 ========== */
+/* 北京时间开奖时刻：双色球 周二·周四·周日 21:15；大乐透 周一·周三·周六 20:30 */
+var DRAW={ssq:{days:[2,4,0],h:21,m:15,sch:'周二 · 周四 · 周日 21:15 开奖'},
+          dlt:{days:[1,3,6],h:20,m:30,sch:'周一 · 周三 · 周六 20:30 开奖'},
+          '3d':{days:[0,1,2,3,4,5,6],h:21,m:15,sch:'每天 21:15 开奖'},
+          pls:{days:[0,1,2,3,4,5,6],h:21,m:25,sch:'每天 21:25 开奖'}};
+var WD=['周日','周一','周二','周三','周四','周五','周六'];
+/* 用 UTC 毫秒表示「北京时间某日 H:M」：Date.UTC(y,m,d,H-8,M) 即北京 H:M */
+function drawMs(row,lot){
+  var cfg=DRAW[lot], p=String(row[1]).split('-');
+  if(p.length<3) return 0;
+  return Date.UTC(+p[0], +p[1]-1, +p[2], cfg.h-8, cfg.m, 0);
+}
+function nextDrawMs(lot){
+  /* 注意量纲：now 是「真实 UTC 毫秒」；bj 只用来取北京日期，不能拿来比大小 */
+  var cfg=DRAW[lot], now=Date.now(), bj=now+8*3600000, c, t;
+  for(var i=0;i<8;i++){
+    c=new Date(bj+i*86400000);
+    if(cfg.days.indexOf(c.getUTCDay())<0) continue;
+    t=Date.UTC(c.getUTCFullYear(),c.getUTCMonth(),c.getUTCDate(),cfg.h-8,cfg.m,0);
+    if(t>now) return t;
+  }
+  return null;
+}
+var cdTimer=null;
+function startCountdown(){
+  if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
+  function tick(){
+    var el=document.getElementById('cdown');
+    if(!el) return;
+    var cfg=DRAW[S.lot], t=nextDrawMs(S.lot);
+    if(!t){ el.innerHTML=''; return; }
+    var left=t-Date.now();
+    var txt, cls='';
+    if(left<=0){
+      txt='<b>开奖进行中</b><br><span class="sch">官方数据通常几分钟后更新</span>';
+    }else{
+      var s=Math.floor(left/1000);
+      var dd=Math.floor(s/86400), hh=Math.floor(s%86400/3600),
+          mm=Math.floor(s%3600/60), ss=s%60;
+      var num = dd>0 ? (dd+' 天 '+hh+' 小时 '+mm+' 分')
+              : (hh>0 ? (hh+' 小时 '+mm+' 分 '+ss+' 秒')
+                      : (mm+' 分 '+ss+' 秒'));
+      txt='距下次开奖 <b>'+num+'</b><br><span class="sch">'+cfg.sch
+         +' · 今天 '+WD[new Date(Date.now()+8*3600000).getUTCDay()]+'</span>';
+    }
+    el.innerHTML=txt;
+  }
+  tick(); cdTimer=setInterval(tick,1000);
+}
+
+/* ========== 自选号码：自动对奖 ========== */
+/* 返回 {state:'wait'|'done', p:奖级, k:红球中几个, hb:蓝球中几个, issue:期号} */
+function betResult(bet){
+  var d=D[S.lot], rows=d.rows, last=rows[rows.length-1], i;
+  if(bet.t && bet.t > drawMs(last,S.lot)) return {state:'wait'};
+  var rk={};
+  for(i=0;i<last[2].length;i++) rk[last[2][i]]=1;
+  var k=0;
+  for(i=0;i<bet.r.length;i++) if(rk[bet.r[i]]) k++;
+  var bk={};
+  for(i=0;i<last[3].length;i++) bk[last[3][i]]=1;
+  var hb=0;
+  for(i=0;i<bet.b.length;i++) if(bk[bet.b[i]]) hb++;
+  return {state:'done', p:prizeOf(S.lot,k,hb), k:k, hb:hb, issue:last[0]};
+}
+function betResHtml(bet){
+  var d=D[S.lot], r=betResult(bet);
+  if(r.state==='wait')
+    return '<div class="bres">⏳ <b>待开奖</b> · 已保存，等下一期开奖后自动比对</div>';
+  if(r.p)
+    return '<div class="bres hit">🎉 <span class="bn">'+r.p.name+'</span>'
+      +(r.p.amt?' · <span class="ba">'+r.p.amt+' 元</span>':' · 浮动奖金')
+      +' <span style="opacity:.75">（'+esc(r.issue)+' 期 · '+d.redLabel+'中 '+r.k
+      +' · '+d.blueLabel+'中 '+r.hb+'）</span></div>';
+  return '<div class="bres">未中奖 <span style="opacity:.75">（'+esc(r.issue)+' 期 · '
+    +d.redLabel+'中 '+r.k+' · '+d.blueLabel+'中 '+r.hb+'）</span></div>';
+}
+
+/* ========== 复制投注文本 ========== */
+function betText(bet){ return bet.r.map(pad).join(' ')+' + '+bet.b.map(pad).join(' '); }
+function allBetText(){
+  var bets=getBets();
+  if(!bets.length) return '';
+  return bets.map(betText).join('\n');
+}
+function copyText(s){
+  if(!s) return false;
+  var ok=false;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(s);
+      ok=true;
+    }
+  }catch(e){ ok=false; }
+  if(!ok) ok=legacyCopy(s);
+  return ok;
+}
+/* 智能复制：先试 Clipboard API，等它真正成功再提示；
+   失败、拒绝或迟迟不返回，都降级到 execCommand，再不行弹手动复制框。 */
+function copySmart(s, okMsg, title){
+  s=String(s==null?'':s);
+  var done=false;
+  function done_ok(){ if(done) return; done=true; toast(okMsg); }
+  function fallback(){
+    if(done) return; done=true;
+    if(legacyCopy(s)) toast(okMsg); else copyFallback(s, title||'复制');
+  }
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      var r=navigator.clipboard.writeText(s);
+      if(r && typeof r.then==='function'){
+        r.then(done_ok, fallback);
+        setTimeout(fallback, 1200);      /* 一直不返回也别干等 */
+        return;
+      }
+      done_ok(); return;
+    }
+  }catch(e){}
+  fallback();
+}
+/* 兜底：隐藏 textarea + execCommand，兼容 file:// 与旧浏览器 */
+function legacyCopy(s){
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=s;
+    ta.setAttribute('readonly','');
+    ta.style.position='fixed'; ta.style.top='0'; ta.style.left='-9999px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select(); ta.setSelectionRange(0, s.length);
+    var ok=document.execCommand('copy');
+    document.body.removeChild(ta);
+    return !!ok;
+  }catch(e){ return false; }
+}
+/* 两种自动复制都失败时，弹出可选中文本框让用户手动复制 */
+var _cpLast=null;
+function copyFallback(t,title){
+  _cpLast={t:t,title:title||'复制'};
+  _cpDraw();
+  /* 若刚被别的弹窗（如首次功能说明）覆盖，再补一次 */
+  setTimeout(function(){
+    var m=$('modal');
+    if(_cpLast && m && m.innerHTML.indexOf('cp-ta')<0) _cpDraw();
+  },150);
+}
+function _cpDraw(){
+  var o=_cpLast||{t:'',title:'复制'}, t=o.t, title=o.title;
+  var h='<div class="mh">'+(title||'复制')+'<span onclick="closeHelp()">×</span></div><div class="mb">'
+    +'<div class="note" style="padding:0 0 10px">浏览器禁止了自动复制，请手动选中下面的内容复制（已帮你全选）。</div>'
+    +'<textarea id="cp-ta" readonly style="width:100%;height:120px;font-size:14px;line-height:1.6;'
+    +'padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">'
+    +String(t==null?'':t).replace(/</g,'&lt;')+'</textarea>'
+    +'<div class="btns" style="margin-top:10px"><button class="p" onclick="cpSelectAll()">全选</button></div>'
+    +'</div>';
+  var m=$('modal'); if(!m) return;
+  m.innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'+h+'</div></div>';
+  setTimeout(function(){ cpSelectAll(); },60);
+}
+function cpSelectAll(){
+  var el=$('cp-ta'); if(!el) return;
+  try{ el.focus(); el.select(); el.setSelectionRange(0, el.value.length); }catch(e){}
+}
+
+function copyBet(i){
+  var bets=getBets(), t=bets.length===1?allBetText():betText(bets[i]);
+  copySmart(t, '已复制：'+t.replace(/\n/g,' ｜ '), '投注号码');
+}
+function copyAllBets(){
+  var t=allBetText();
+  if(!t){ toast('还没有保存的号码'); return; }
+  toast(copyText(t) ? '已复制 '+getBets().length+' 注' : '复制失败，请长按手动选择');
+}
+/* 轻量提示条（替代 alert，避免打断操作） */
+var toastTimer=null;
+function toast(msg){
+  var el=document.getElementById('toast');
+  if(!el){
+    el=document.createElement('div');
+    el.id='toast'; el.className='toastbox';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg; el.className='toastbox on';
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){ el.className='toastbox'; }, 2200);
+}
+
+/* ========== 生成投注图片 ========== */
+function makeBetImage(){
+  var d=D[S.lot], bets=getBets();
+  var W=680, PAD=30, TITLE=100, FOOT=76, LH=86;
+  var H=PAD*2+TITLE+bets.length*LH+FOOT;
+  var dpr=Math.min(2, window.devicePixelRatio||1);
+  var cv=document.createElement('canvas');
+  cv.width=W*dpr; cv.height=H*dpr;
+  var g=cv.getContext('2d');
+  g.scale(dpr,dpr);
+  /* 背景（图片始终用浅色，便于店主阅读） */
+  g.fillStyle='#ffffff'; g.fillRect(0,0,W,H);
+  g.fillStyle='#e8402a'; g.fillRect(0,0,W,6);
+  /* 标题 */
+  g.fillStyle='#1a1a1a';
+  g.font='700 26px "PingFang SC","Microsoft YaHei",sans-serif';
+  g.textAlign='left'; g.textBaseline='alphabetic';
+  g.fillText(d.name+' 投注单', PAD, PAD+42);
+  g.fillStyle='#888'; g.font='15px "PingFang SC","Microsoft YaHei",sans-serif';
+  g.fillText('共 '+bets.length+' 注 · 每注 2 元 · 合计 '+(bets.length*2)+' 元', PAD, PAD+68);
+  g.strokeStyle='#eee'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(PAD,PAD+80); g.lineTo(W-PAD,PAD+80); g.stroke();
+  /* 逐注 */
+  var y=PAD+TITLE;
+  for(var i=0;i<bets.length;i++){
+    var bet=bets[i], cy=y+LH/2, x=PAD+18;
+    /* 序号 */
+    g.fillStyle='#bbb'; g.font='14px "PingFang SC",sans-serif'; g.textAlign='left';
+    g.fillText('#'+(i+1), PAD-4, cy+5);
+    /* 红球 */
+    for(var j=0;j<bet.r.length;j++){ drawImgBall(g,x,cy,20,'#e8402a',pad(bet.r[j])); x+=50; }
+    /* 加号 */
+    g.fillStyle='#999'; g.font='600 20px sans-serif'; g.textAlign='center';
+    g.fillText('+', x+8, cy+7); x+=34;
+    /* 蓝球 */
+    for(var k=0;k<bet.b.length;k++){ drawImgBall(g,x,cy,20,'#2b6cd4',pad(bet.b[k])); x+=50; }
+    y+=LH;
+  }
+  /* 页脚 */
+  g.textAlign='left'; g.fillStyle='#aaa';
+  g.font='12.5px "PingFang SC",sans-serif';
+  g.fillText('仅供娱乐 · 请当场核对号码后购买', PAD, H-PAD-16);
+  var now=new Date(Date.now()+8*3600000);
+  var ts=now.getUTCFullYear()+'-'+pad(now.getUTCMonth()+1)+'-'+pad(now.getUTCDate())
+        +' '+pad(now.getUTCHours())+':'+pad(now.getUTCMinutes());
+  g.textAlign='right';
+  g.fillText('生成于 '+ts, W-PAD, H-PAD-16);
+  return cv.toDataURL('image/png');
+}
+function drawImgBall(g,cx,cy,r,color,txt){
+  g.beginPath(); g.arc(cx,cy,r,0,Math.PI*2);
+  g.fillStyle=color; g.fill();
+  g.fillStyle='#fff';
+  g.font='700 '+Math.round(r*0.95)+'px "PingFang SC","Microsoft YaHei",sans-serif';
+  g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(txt, cx, cy+1);
+  g.textBaseline='alphabetic';
+}
+function showBetImage(){
+  var bets=getBets();
+  if(!bets.length){ toast('还没有保存的号码'); return; }
+  var url;
+  try{ url=makeBetImage(); }
+  catch(e){ toast('生成失败：'+(e.message||e)); return; }
+  $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'
+   +'<div class="mh">投注图片<span onclick="closeHelp()">×</span></div><div class="mb">'
+   +'<img class="imgprev" src="'+url+'" alt="投注单">'
+   +'<div class="imghint">手机上<b>长按图片</b>可保存或转发<br>'
+   +'给店主看这张图，比口头念号更不容易出错</div>'
+   +'<a class="dlbtn" download="'+D[S.lot].name+'投注单.png" href="'+url+'">下载图片</a>'
+   +'</div></div>';
+}
+function amtTxt(p){ return p?(p.amt?('奖金 '+p.amt+' 元（固定奖）'):'浮动奖金，以官方公告为准'):''; }
+
+/* ---------- 中奖核对 ---------- */
+function toggleChk(n,isBlue){
+  var a=isBlue?S.chkBlue:S.chkRed, max=isBlue?D[S.lot].blueCount:D[S.lot].redCount;
+  var i=a.indexOf(n);
+  if(i>=0) a.splice(i,1);
+  else{
+    if(a.length>=max) a.shift();          /* 选满时顶掉最早一个 */
+    a.push(n); a.sort(function(x,y){return x-y});
+  }
+  render();
+}
+function clearChk(){ S.chkRed=[]; S.chkBlue=[]; render(); }
+function setChkMode(m){ S.chkMode=m; render(); }
+function setChkIssue(v){ S.chkIssue=v; S.chkMode='issue'; render(); }
+function findRow(issue){
+  var rows=D[S.lot].rows, s=String(issue).trim();
+  for(var i=rows.length-1;i>=0;i--) if(String(rows[i][0])===s) return rows[i];
+  return null;
+}
+function renderCheck(){
+  var d=D[S.lot], rows=d.rows, last=rows[rows.length-1];
+  var target=null;
+  if(S.chkMode==='issue'){
+    var q=String(S.chkIssue||'').trim();
+    target = q? findRow(q) : null;
+  }
+  if(!target) target=last;
+
+  var h='<div class="card"><div class="sec">中奖核对（'+d.name+'）</div><div class="pick">';
+  /* 对比期选择 */
+  h+='<div class="frow"><span class="flab">对比</span><div class="rdo">'
+   +'<span class="'+(S.chkMode==='latest'?'on':'')+'" onclick="setChkMode(\'latest\')">最新一期</span>'
+   +'<span class="'+(S.chkMode==='issue'?'on':'')+'" onclick="setChkMode(\'issue\')">指定期号</span></div>'
+   +(S.chkMode==='issue'
+     ? '<input class="ipt" id="ckis" type="text" inputmode="numeric" placeholder="如 '+last[0]+'" '
+       +'value="'+esc(S.chkIssue)+'" oninput="setChkIssue(this.value)">'
+     : '')+'</div>';
+  if(S.chkMode==='issue' && String(S.chkIssue||'').trim() && !target)
+    h+='<div class="msg"><div class="e">✗ 未找到该期号，已回退到最新一期</div></div>';
+
+  /* 我的号码 */
+  h+='<div style="font-size:12px;color:#666;margin-top:4px">我的'+d.redLabel+' 已选 <b>'+S.chkRed.length+'</b>/'+d.redCount+'</div><div class="grid">';
+  for(var i=1;i<=d.redMax;i++)
+    h+='<span class="nb'+(S.chkRed.indexOf(i)>=0?' sel':'')+'" onclick="toggleChk('+i+',false)">'+pad(i)+'</span>';
+  h+='</div><div style="font-size:12px;color:#666">我的'+d.blueLabel+' 已选 <b>'+S.chkBlue.length+'</b>/'+d.blueCount+'</div><div class="grid">';
+  for(var j=1;j<=d.blueMax;j++)
+    h+='<span class="nb'+(S.chkBlue.indexOf(j)>=0?' sel b':'')+'" onclick="toggleChk('+j+',true)">'+pad(j)+'</span>';
+  h+='</div>';
+  h+='<div class="btns">'
+   +'<button class="g" onclick="clearChk()">清空</button></div>';
+
+  /* 开奖号码 */
+  h+='<div class="prev"><div style="font-size:12px;color:#888;margin-bottom:6px">'
+   +'开奖号码 · <b>'+esc(target[0])+'</b> 期（'+esc(target[1])+'）</div>'
+   + fmtBalls(target,true) +'</div>';
+  h+='<div style="font-size:12px;color:#888">我的号码</div>'
+   +'<div style="margin-top:5px">'
+   +(S.chkRed.length||S.chkBlue.length
+      ? fmtBalls({2:S.chkRed,3:S.chkBlue},true)
+      : '<span style="font-size:12.5px;color:#bbb">尚未选择</span>')
+   +'</div>';
+  h+='</div>';
+
+  /* 结果 */
+  var ready = S.chkRed.length===d.redCount && S.chkBlue.length===d.blueCount;
+  if(!ready){
+    h+='<div class="pz"><div class="pzno">请选满 '+d.redCount+' 个'+d.redLabel+'和 '+d.blueCount+' 个'+d.blueLabel+'</div>'
+      +'<div class="pzamt">已选 '+S.chkRed.length+'/'+d.redCount+' · '+S.chkBlue.length+'/'+d.blueCount+'</div></div>';
+  } else {
+    var rk={}, j2;
+    for(j2=0;j2<target[2].length;j2++) rk[target[2][j2]]=1;
+    var hitR=[], k=0;
+    for(j2=0;j2<S.chkRed.length;j2++) if(rk[S.chkRed[j2]]){ k++; hitR.push(S.chkRed[j2]); }
+    var hitB=[], bk={};
+    for(j2=0;j2<target[3].length;j2++) bk[target[3][j2]]=1;
+    for(j2=0;j2<S.chkBlue.length;j2++) if(bk[S.chkBlue[j2]]) hitB.push(S.chkBlue[j2]);
+    /* 注意：大乐透后区有 2 个号，奖级要按「中几个」判定，不能只传布尔 */
+    var p=prizeOf(S.lot,k,hitB.length);
+    h+= p
+      ? '<div class="pz hit"><div class="pzname">'+p.name+'</div>'
+        +'<div class="pzamt">'+amtTxt(p)+'</div>'
+        +'<div class="pzsub">'+d.redLabel+'中 <b>'+k+'</b> 个 · '+d.blueLabel+'中 <b>'+hitB.length+'</b> 个</div></div>'
+      : '<div class="pz"><div class="pzno">未中奖</div>'
+        +'<div class="pzsub">'+d.redLabel+'中 <b>'+k+'</b> 个 · '+d.blueLabel+'中 <b>'+hitB.length+'</b> 个</div></div>';
+    h+='<div class="hitlab">'+(hitR.length?('命中的'+d.redLabel):'')+'</div>';
+    if(hitR.length){
+      h+='<div class="hitrow">';
+      for(j2=0;j2<hitR.length;j2++) h+='<span class="b r">'+pad(hitR[j2])+'</span>';
+      h+='</div>';
+    }
+    if(hitB.length){
+      h+='<div class="hitlab">命中的'+d.blueLabel+'</div><div class="hitrow">';
+      for(j2=0;j2<hitB.length;j2++) h+='<span class="b bl">'+pad(hitB[j2])+'</span>';
+      h+='</div>';
+    }
+  }
+  h+='<div class="note">奖级按官方规则判定；一/二等奖为浮动奖金，以官方公告为准。</div></div>';
+  h+=prizeTable(d);
+  return h;
+}
+/* 奖级规则表：中球条件 / 奖级 / 奖金 */
+function prizeRows(lot){
+  if(lot==='ssq') return [
+    ['6+1','一等奖','浮动'],
+    ['6+0','二等奖','浮动'],
+    ['5+1','三等奖','3000 元'],
+    ['5+0 · 4+1','四等奖','200 元'],
+    ['4+0 · 3+1','五等奖','10 元'],
+    ['2+1 · 1+1 · 0+1','六等奖','5 元']
+  ];
+  return [
+    ['5+2','一等奖','浮动'],
+    ['5+1','二等奖','浮动'],
+    ['5+0','三等奖','浮动'],
+    ['4+2','四等奖','3000 元'],
+    ['4+1','五等奖','300 元'],
+    ['3+2','六等奖','200 元'],
+    ['4+0','七等奖','100 元'],
+    ['3+1 · 2+2','八等奖','15 元'],
+    ['3+0 · 2+1 · 1+2 · 0+2','九等奖','5 元']
+  ];
+}
+function prizeTable(d){
+  var rs=prizeRows(S.lot), p=poolOf(d), tp=(p&&p.top)||{}, i, amt, isTop, real;
+  var h='<div class="card"><div class="sec">奖项说明（'+d.name+'）</div>'
+   +'<table style="font-size:12.5px"><thead><tr>'
+   +'<th style="cursor:default;text-align:left">中球</th>'
+   +'<th style="cursor:default;text-align:left">奖级</th>'
+   +'<th style="cursor:default;text-align:right">奖金</th></tr></thead><tbody>';
+  for(i=0;i<rs.length;i++){
+    amt=rs[i][2];
+    isTop=(rs[i][1]==='一等奖'||rs[i][1]==='二等奖');
+    if(isTop){
+      real=(rs[i][1]==='一等奖')?tp.p1:tp.p2;
+      if(real) amt='<span style="color:#e8402a">'+moneyShort(real)+'</span>'
+        +' <span style="color:#aaa">/ 注</span>';
+    }
+    h+='<tr><td style="color:#888">'+esc(rs[i][0])+'</td>'
+      +'<td>'+esc(rs[i][1])+'</td>'
+      +'<td style="text-align:right">'+amt+'</td></tr>';
+  }
+  h+='</tbody></table>';
+  if(tp.p1||tp.p2){
+    h+='<div class="note">红字为 <b>'+esc((p&&p.issue)||'最新')+' 期</b>'
+      +'实际开出的单注奖金（浮动奖每期不同）。以官方公告为准。</div>';
+  } else {
+    h+='<div class="note">奖级按官方规则判定；一/二/三等奖为<b>浮动奖金</b>，'
+      +'每期金额不同，以官方公告为准。</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+/* ---------- 条件机选 ---------- */
+/* 理论均值：红球个數 × (1+最大号)/2 */
+function sumMid(){
+  var d=D[S.lot];
+  return Math.round(d.redCount*(1+d.redMax)/2);
+}
+/* 和值预设范围：low/mid/high 三档，UI 与实际筛选共用同一套数值 */
+function sumRange(k){
+  var m=sumMid(), d=D[S.lot];
+  var span=Math.round(d.redMax*0.45);
+  if(k==='low')  return [m-span, m-Math.round(span*0.25)];
+  if(k==='mid')  return [m-Math.round(span*0.35), m+Math.round(span*0.35)];
+  if(k==='high') return [m+Math.round(span*0.25), m+span];
+  return null;
+}
+function sumPreset(k){ S.genSum=sumRange(k); render(); }
+function setGen(field,v){ S[field]=v; render(); }
+/* 判断一组红球是否满足当前条件 */
+function matchCond(r){
+  var d=D[S.lot], i, s=0;
+  for(i=0;i<r.length;i++) s+=r[i];
+  var g=S.genSum;
+  if(g && g[0]>0 && s<g[0]) return false;
+  if(g && g[1]>0 && s>g[1]) return false;
+  if(S.genOdd!=='any'){
+    var odd=0; for(i=0;i<r.length;i++) if(r[i]%2) odd++;
+    if((odd+':'+(r.length-odd))!==S.genOdd) return false;
+  }
+  if(S.genBig!=='any'){
+    var mid=Math.floor((d.redMax+1)/2), big=0;
+    for(i=0;i<r.length;i++) if(r[i]>mid) big++;
+    if((big+':'+(r.length-big))!==S.genBig) return false;
+  }
+  if(S.genZone!=='any'){
+    var z1=Math.ceil(d.redMax/3), z2=Math.ceil(d.redMax*2/3), c1=0,c2=0,c3=0;
+    for(i=0;i<r.length;i++){ if(r[i]<=z1)c1++; else if(r[i]<=z2)c2++; else c3++; }
+    if((c1+':'+c2+':'+c3)!==S.genZone) return false;
+  }
+  return true;
+}
+function genByCond(){
+  var d=D[S.lot], i, tries=0, found=null, MAX=60000;
+  var n=Math.max(1,Math.min(5,S.genCount||1));
+  while(tries<MAX){
+    tries++;
+    var r=randN(d.redCount,d.redMax);
+    if(matchCond(r)){ found=r; break; }
+  }
+  if(!found){
+    S.genMsg='条件太严，试了 '+MAX+' 次也没凑出来，放宽一点再试。';
+    render(); return;
+  }
+  if(n===1){
+    /* 单注：填入上方选号区，可再自行调整 */
+    S.pickRed=found.slice();
+    S.pickBlue=randN(d.blueCount,d.blueMax);
+    S.genMsg='已生成（随机尝试 '+tries+' 次命中）· 和值 '+sumRed({2:found});
+  } else {
+    /* 多注：直接加入已保存列表，避免互相覆盖 */
+    var a=getBets(), made=[], used={}, k;
+    for(k=0;k<n;k++){
+      var rr=null, t2=0;
+      while(t2<MAX){
+        t2++;
+        var cand=randN(d.redCount,d.redMax);
+        if(!matchCond(cand)) continue;
+        var key=cand.join(',');
+        if(used[key]) continue;
+        rr=cand; used[key]=1; break;
+      }
+      if(!rr) break;
+      made.push({r:rr.slice(), b:randN(d.blueCount,d.blueMax), t:Date.now()+k});
+    }
+    if(!made.length){
+      S.genMsg='条件太严，没能生成，放宽一点再试。';
+    } else {
+      for(k=0;k<made.length;k++){ a.push(made[k]); addRec(S.lot, made[k]); }
+      saveBets(a);
+      var sums=[], z;
+      for(z=0;z<made.length;z++) sums.push(sumRed({2:made[z].r}));
+      S.genMsg='已生成 <b>'+made.length+'</b> 注并加入列表（和值 '+sums.join(' / ')+'）'
+        +(made.length<n?('，条件太严只凑出 '+made.length+' 注'):'')+'。';
+    }
+  }
+  render();
+}
+function renderGen(){
+  var d=D[S.lot], rc=d.redCount, m=sumMid(), g=S.genSum;
+  var oddOpts=['any'], i;
+  for(i=0;i<=rc;i++) oddOpts.push(i+':'+(rc-i));
+  var bigOpts=['any'];
+  for(i=0;i<=rc;i++) bigOpts.push(i+':'+(rc-i));
+  /* 三区比：全组合很多，只列常用的几组 */
+  var zoneOpts=['any','2:2:2','3:2:1','1:2:3','2:3:1','1:3:2','3:1:2','2:1:3','4:1:1','1:1:4','1:4:1'];
+
+  var h='<div class="prev" style="margin-top:10px;background:#fafafa">'
+   +'<div style="font-size:12.5px;color:#666;font-weight:600;margin-bottom:8px">条件机选</div>';
+
+  /* 和值 */
+  h+='<div class="frow"><span class="flab">和值</span><div class="rdo">'
+   +'<span class="'+(!g?'on':'')+'" onclick="sumPreset(\'any\')">不限</span>';
+  ['low','mid','high'].forEach(function(k){
+    var lab=k==='low'?'偏低':(k==='mid'?'居中':'偏高');
+    var v=sumRange(k);
+    var on = g && g[0]===v[0] && g[1]===v[1];
+    h+='<span class="'+(on?'on':'')+'" onclick="sumPreset(\''+k+'\')">'+lab+' '+v[0]+'~'+v[1]+'</span>';
+  });
+  h+='</div></div>';
+
+  /* 奇偶比 */
+  h+='<div class="frow"><span class="flab">奇偶比</span><div class="rdo">';
+  for(i=0;i<oddOpts.length;i++)
+    h+='<span class="'+(S.genOdd===oddOpts[i]?'on':'')+'" onclick="setGen(\'genOdd\',\''+oddOpts[i]+'\')">'
+      +(oddOpts[i]==='any'?'不限':oddOpts[i])+'</span>';
+  h+='</div></div>';
+
+  /* 大小比 */
+  h+='<div class="frow"><span class="flab">大小比</span><div class="rdo">';
+  for(i=0;i<bigOpts.length;i++)
+    h+='<span class="'+(S.genBig===bigOpts[i]?'on':'')+'" onclick="setGen(\'genBig\',\''+bigOpts[i]+'\')">'
+      +(bigOpts[i]==='any'?'不限':bigOpts[i])+'</span>';
+  h+='</div></div>';
+
+  /* 三区比 */
+  h+='<div class="frow"><span class="flab">三区比</span><div class="rdo">';
+  for(i=0;i<zoneOpts.length;i++)
+    h+='<span class="'+(S.genZone===zoneOpts[i]?'on':'')+'" onclick="setGen(\'genZone\',\''+zoneOpts[i]+'\')">'
+      +(zoneOpts[i]==='any'?'不限':zoneOpts[i])+'</span>';
+  h+='</div></div>';
+
+  /* 生成注数：1~5。1 注填入上方选号区；多注直接加入已保存列表 */
+  h+='<div class="frow"><span class="flab">注数</span><div class="rdo">';
+  for(i=1;i<=5;i++)
+    h+='<span class="'+((S.genCount||1)===i?'on':'')+'" onclick="S.genCount='+i+';render()">'+i+'</span>';
+  h+='</div></div>';
+
+  h+='<div class="btns" style="margin-top:2px">'
+   +'<button class="p" onclick="genByCond()">生成'+((S.genCount||1)>1?(S.genCount)+' 注':'一注')+'</button>'
+   +'<button class="g" onclick="S.genSum=null;S.genOdd=\'any\';S.genBig=\'any\';S.genZone=\'any\';S.genMsg=\'\';render()">重置条件</button>'
+   +'</div>';
+  if(S.genMsg) h+='<div class="msg" style="margin-top:8px"><div class="'+(/太严/.test(S.genMsg)?'e':'ok')+'">'+S.genMsg+'</div></div>';
+  h+='<div style="font-size:11px;color:#aaa;line-height:1.6;margin-top:8px">'
+    +'大小号以 '+(Math.floor((d.redMax+1)/2))+' 为界，三区按 1-'+Math.ceil(d.redMax/3)+' / '
+    +(Math.ceil(d.redMax/3)+1)+'-'+Math.ceil(d.redMax*2/3)+' / '+(Math.ceil(d.redMax*2/3)+1)+'-'+d.redMax+' 划分。<br>'
+    +'条件只是筛出<b>符合特征</b>的号码，不提高中奖概率——每注概率完全相同。</div>';
+  h+='</div>';
+  return h;
+}
 function renderMine(){
   var d=D[S.lot], bets=getBets(), c=pickCheck();
   var h='<div class="card"><div class="sec">选号（'+d.name+'）</div><div class="pick">'
@@ -713,18 +2108,46 @@ function renderMine(){
    +'<button class="'+(c.ok?'p':'dis')+'" onclick="addBet()">添加</button>'
    +'<button onclick="randPick()">随机一注</button>'
    +'<button class="g" onclick="clearPick()">清空选择</button>'
-   +'</div></div>';
+   +'<button class="g" onclick="S.genOpen=!S.genOpen;render()">条件机选 '+(S.genOpen?'▴':'▾')+'</button>'
+   +'</div>';
+  if(S.genOpen) h+=renderGen();
+  h+='</div>';
 
   h+='<div class="sec">已保存 '+bets.length+' 注'
    +(bets.length?'<span style="float:right;font-weight:400;color:#c33;cursor:pointer" onclick="clearBets()">清空</span>':'')+'</div>';
   if(!bets.length)
     h+='<div class="empty">还没有自选号码<br><span style="font-size:12px">在上面选择号码后点「添加」，或点「随机一注」</span></div>';
+  /* 全部操作：复制 / 生成图片 */
+  if(bets.length)
+    h+='<div class="betops" style="margin:8px 12px 0">'
+      +'<button onclick="copyAllBets()">复制全部文本</button>'
+      +'<button onclick="showBetImage()">生成投注图片</button></div>';
+  /* 中奖汇总 */
+  if(bets.length){
+    var won=0, amt=0, pend=0;
+    for(var m=0;m<bets.length;m++){
+      var rr=betResult(bets[m]);
+      if(rr.state==='wait'){ pend++; continue; }
+      if(rr.p){ won++; if(rr.p.amt) amt+=rr.p.amt; }
+    }
+    var sum='';
+    if(won) sum+=' 🎉 <b>'+won+'</b> 注中奖'+(amt?('，固定奖共 <b>'+amt+'</b> 元'):'');
+    if(pend) sum+=' ⏳ <b>'+pend+'</b> 注待开奖';
+    if(!won && !pend) sum=' 本轮均未中奖';
+    h+='<div class="bres" style="margin:8px 12px 0">自动对比最新一期：'+sum+'</div>';
+  }
   for(var b=0;b<bets.length;b++){
     var bet=bets[b], r={2:bet.r,3:bet.b}, a=analyze(bet.r,bet.b);
-    h+='<div class="betcard"><div class="bettop"><div>'+fmtBalls(r,true)+'</div>'
-      +'<button class="del" onclick="delBet('+b+')">×</button></div>'
+    h+='<div class="betcard"><div class="bettop"><div>'+fmtBalls(r,true)+'</div></div>'
       +'<div style="font-size:12px;color:#666;margin-top:6px">和值 '+sumRed(r)+' · 奇偶比 '+oddStr(r)
       +(rbOverlap(r)?' · <span style="color:#c33">'+d.blueLabel+'与'+d.redLabel+'有重合</span>':'')+'</div>';
+    /* ① 自动核对结果 */
+    h+=betResHtml(bet);
+    /* ② 复制 / 图片 */
+    h+='<div class="betops">'
+      +'<button onclick="copyBet('+b+')">复制这注</button>'
+      +'<button onclick="showBetImage()">生成图片</button>'
+      +'<button class="delbtn" onclick="delBet('+b+')">删除</button></div>';
     if(a.exact)
       h+='<div class="kv"><span class="tagline tag-hot">历史开出过</span>'
         +esc(a.exact.issue)+' 期（'+esc(a.exact.date)+'）'+d.blueLabel+' '+a.exact.blue.map(pad).join(' ')+'</div>';
@@ -750,6 +2173,40 @@ function refreshData(){
 function clearMyBets(){
   closeSide(); saveBets([]); if(S.tab==='mine') render();
 }
+function licShowInfo(){
+  if(!LICENSE) return;
+  var o=licGet(), ok=licValid();
+  var ex=(o&&o.exp&&/^\d{4}-/.test(o.exp))?o.exp:(LICENSE.expire||'—');
+  var body='<h4>授权状态</h4><p>'+(ok
+      ? '<b style="color:#1a9c46">已激活</b>'
+      : (licExpired()?'<b style="color:#c33">已到期</b>':'<b style="color:#c33">未激活</b>'))
+    +' · 有效期至 <b>'+esc(ex)+'</b></p>';
+  if(admCfg()){
+    body+='<h4>管理员</h4><div class="btns">'
+      +(admIn()
+        ? '<button class="p" onclick="admShowGen()">生成授权码</button>'
+          +'<button class="delbtn" onclick="admLogout()">退出登录</button>'
+        : '<button onclick="admShowLogin()">管理员登录</button>')
+      +'</div>';
+  }
+  if(o && o.code){
+    body+='<h4>本机授权码</h4><p style="font-size:15px;letter-spacing:1px"><b>'+esc(o.code)+'</b></p>'
+      +'<p style="font-size:12px;color:#888">已与本机绑定。建议抄下来保存：'
+      +'清理浏览器数据后可用它重新激活；换设备需重新向管理员索取。</p>'
+      +'<div class="btns" style="margin-top:8px">'
+      +'<button onclick="licCopyCode()">复制授权码</button>'
+      +'<button class="delbtn" onclick="licDeactivate()">清除本机授权</button></div>';
+  }else{
+    body+='<p style="font-size:12px;color:#888">输入管理员提供的授权码后，'
+      +'这里会显示与本机绑定的授权码，可长期保存以备恢复。</p>';
+  }
+  body+='<h4>说明</h4><p style="font-size:12px">授权码与设备绑定，同一台设备激活一次即可。'
+    +'该限制在页面内完成，用于避免链接被随手转发；'
+    +'它不具备强加密能力，也无法从后台吊销。</p>';
+  $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'
+   +'<div class="mh">访问授权<span onclick="closeHelp()">×</span></div><div class="mb">'+body
+   +'</div></div></div>';
+}
 function showSource(){
   var d=D[S.lot];
   $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'
@@ -769,15 +2226,22 @@ function showHelp(){
   var lot='';
   $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'
    +'<div class="mh">功能说明<span onclick="closeHelp()">×</span></div><div class="mb">'
-   +'<h4>数据</h4><p>开奖结果<b>实时</b>从官方接口抓取：双色球来自中国福彩网，'
-   +'大乐透来自中国体彩。首次打开稍慢，之后用缓存。'
+   +'<h4>数据</h4><p>开奖结果<b>实时</b>从官方接口抓取：双色球与福彩3D来自中国福彩网，'
+   +'大乐透与排列三来自中国体彩。首次打开稍慢，之后用缓存。'
    +'顶部常驻显示<b>最新一期</b>摘要与数据更新时间。</p>'
+   +'<p><b>四种玩法</b>：顶部标签切换。<b>双色球</b>（6 红 + 1 蓝，1-33 / 1-16）、'
+   +'<b>大乐透</b>（5 前区 + 2 后区，1-35 / 1-12）是「选号型」玩法，号码不重复、不分顺序；'
+   +'<b>福彩3D</b> 与 <b>排列三</b> 是「按位型」玩法，三位数字、每位 0-9、'
+   +'<b>可以重复且分顺序</b>（1 2 3 与 3 2 1 不是同一注）。'
+   +'按位玩法的页面会换成对应版本（走势改按位折线、统计改按位统计）。</p>'
 
    +'<h4>开奖记录</h4><ul>'
    +'<li>五列：<b>期号 / 开奖日期 / 开奖号码 / 奇偶比 / 和值</b></li>'
    +'<li>默认按<b>期号降序 ▼</b>（最新在最上）。点击任意表头切换排序字段，'
    +'再点一次切换升▲降▼；当前排序列标红并显示箭头</li>'
    +'<li><b>黄底行</b>＝该期蓝球（后区）与红球（前区）号码有重合</li>'
+   +'<li><b>搜索框</b>：输入期号或日期即时过滤（如 <b>2026122</b> 或 <b>2026-10-25</b>），'
+   +'支持不完整期号；点「清除」恢复全部</li>'
    +'<li>默认显示 60 期，点「加载更多」每次加 60 期</li></ul>'
 
    +'<h4>号码走势</h4><ul>'
@@ -795,7 +2259,9 @@ function showHelp(){
    +'<h4>出现次数</h4><ul>'
    +'<li>统计全历史每个号码的<b>出现次数</b>与<b>占比</b>，红球区与蓝球区分别统计</li>'
    +'<li>默认按<b>出现次数升序 ▲</b>；点击表头（号码 / 出现次数 / 占比%）切换排序字段与升降序，'
-   +'两个区独立排序</li></ul>'
+   +'两个区独立排序</li>'
+   +'<li>福彩3D / 排列三为<b>按位统计</b>（百位、十位、个位各 0-9），三个位各自独立排序，'
+   +'操作方式与双色球一致</li></ul>'
 
    +'<h4>冷热分布</h4><ul>'
    +'<li>用<b>颜色方格</b>展示：格内为「号码 / 该窗口出现次数」</li>'
@@ -803,66 +2269,763 @@ function showHelp(){
    +'按偏离理论次数的标准差判定</li>'
    +'<li>窗口可切<b>近一个月 / 近一年 / 全部历史</b>，当前窗口的期数显示在下拉框右侧</li>'
    +'<li>下方直接列出<b>最热 3 个</b>与<b>最冷 3 个</b>；可按号码或冷热排序</li>'
-   +'<li>窗口越短样本越少，冷热波动越大——同一号码在不同窗口下的冷热可能完全不同</li></ul>'
+   +'<li>窗口越短样本越少，冷热波动越大——同一号码在不同窗口下的冷热可能完全不同</li>'
+   +'<li>福彩3D / 排列三按<b>百位、十位、个位</b>分别展示，每位各有最热 / 最冷前 3，'
+   +'同样可切换「按号码 / 按冷热」</li></ul>'
 
    +'<h4>我的选号</h4><ul>'
    +'<li>点选号码或「随机一注」添加，<b>添加前实时校验</b>并提示：'
    +'缺球、多选、组合重复会拦截（按钮置灰）；蓝球与红球重合会提醒（允许添加）</li>'
    +'<li>每注显示：<b>和值、奇偶比</b>、是否历史开出过、'
    +'<b>全史最相近</b>（期号 + 日期 + 重合了哪几个号）</li>'
-   +'<li>号码存在<b>本机浏览器</b>，不会上传；可在菜单中清除</li></ul>'
+   +'<li>号码存在<b>本机浏览器</b>，不会上传；可在菜单中清除</li>'
+   +'<li><b>条件机选</b>（点「条件机选 ▾」展开）：按 <b>和值区间</b>（偏低/居中/偏高）、'
+   +'<b>奇偶比</b>、<b>大小比</b>、<b>三区比</b> 筛选后随机生成</li>'
+   +'<li><b>生成注数</b>可选 <b>1~5</b>：选 <b>1</b> 时结果填入上方选号区（可再手动调整）；'
+   +'选 <b>2~5</b> 时生成的多注互不重复，<b>直接加入下方已保存列表</b></li>'
+   +'<li>条件过严凑不出时会提示，放宽即可</li>'
+   +'<li><b>自动对奖</b>：每注都<b>自动与最新一期比对</b>，直接显示'
+   +'「🎉 几等奖 · 多少元」或「未中奖」；如果这注是在最新一期开奖<b>之后</b>才存的，'
+   +'会显示「⏳ 待开奖」</li>'
+   +'<li>列表顶部有<b>中奖汇总</b>：几注中奖、固定奖共多少元、几注待开奖</li>'
+   +'<li>选号保存在<b>本机浏览器</b>里，换设备或清理浏览器数据会丢失；'
+   +'每次添加都会自动归档到「<b>我的选号记录</b>」，那里长期保留</li>'
+
+   +'<h4>我的选号记录</h4><ul>'
+   +'<li>每次在「我的选号」里添加的号码，都会<b>自动归档</b>到这里并长期保留；'
+   +'清空「我的选号」<b>不会影响</b>这里的记录</li>'
+   +'<li>每条记录显示<b>彩种、号码、保存时间</b>，以及相对该彩种最新一期的<b>对奖结果</b>'
+   +'（中奖 / 未中奖 / 待开奖）</li>'
+   +'<li>按时间倒序排列，顶部汇总「共多少条、几注曾中奖、几注待开奖」</li>'
+   +'<li><b>筛选</b>：可按 <b>彩种</b>（双色球/大乐透/福彩3D/排列三）、'
+   +'<b>购买状态</b>（已购买 / 未购买）、<b>开奖状态</b>（待开奖 / 已开奖）'
+   +'以及 <b>日期区间</b> 组合筛选；汇总会跟着筛选结果变化，'
+   +'点「清除筛选」恢复全部</li>'
+   +'<li>最多保留 <b>500 条</b>，超出会丢弃最早的；只存在本机浏览器，不会上传</li>'
+   +'<li><b>选号 ≠ 购买</b>：新记录默认「未购买」，真买了点「标记为已买」；'
+   +'没买的可点「删除」移除（删除需点两次确认）</li>'
+   +'<li>每条下方有<b>「删除」</b>按钮，点一下变成<b>「确认删除」</b>再点才真删（旁边有取消）；'
+   +'顶部「清空全部记录」一次性删除全部</li>'
+   +'<li><b>选号不等于购买</b>：新记录默认标为「⚪ 未购买」——因为添加号码只是选号，'
+   +'不代表真的去买了。真的买了就点<b>「标记为已买」</b>改成「✅ 已购买」，'
+   +'点错可再点一次改回来</li>'
+   +'<li>顶部汇总区分<b>已买 / 未买</b>各多少条，方便对账</li></ul>'
+   +'<li><b>复制文本</b>：每注下方「复制这注」生成 <b>01 02 04 17 19 30 + 09</b> 格式；'
+   +'顶部「复制全部文本」一次复制所有注</li>'
+   +'<li><b>生成投注图片</b>：把号码画成<b>大字号图片</b>，手机上长按可保存或转发，'
+   +'给店主看图比口头念号更不容易出错</li></ul>'
+
+   +'<h4>开奖倒计时</h4><ul>'
+   +'<li>「最新一期」卡片下方显示<b>距下次开奖</b>的时间，每秒自更新</li>'
+   +'<li>同时标注该彩种的<b>开奖日与时刻</b>：双色球 周二·周四·周日 21:15；'
+   +'大乐透 周一·周三·周六 20:30；福彩3D 每天 21:15；排列三 每天 21:25（均为北京时间）</li>'
+   +'<li>倒计时归零后显示「开奖进行中」，官方数据通常几分钟后更新</li></ul>'
+
+   +'<h4>中奖核对</h4><ul>'
+   +'<li>输入自己买的号，一键对奖。可选择对比<b>最新一期</b>或<b>指定期号</b></li>'
+   +'<li>号码在上方号码盘<b>点选</b>填入，选满后自动出结果</li>'
+   +'<li>结果直接显示<b>中几等奖</b>、奖金（固定奖显示金额，浮动奖标注以官方公告为准）、'
+   +'以及<b>命中的红球/蓝球</b></li>'
+   +'<li>奖级按官方规则判定：<b>双色球</b>一至六等奖；<b>大乐透</b>一至九等奖</li>'
+   +'<li>下方<b>「奖项说明」</b>列出完整奖级表：中球条件、奖级、奖金；'
+   +'一/二等奖为浮动奖，会显示<b>当期实际开出的单注奖金</b></li></ul>'
+
+   +'<h4>复式 / 胆拖</h4><ul>'
+   +'<li><b>复式</b>：选出比单式更多的号码，自动覆盖这些号码的<b>所有组合</b>。'
+   +'比如双色球选 7 个红球 + 1 个蓝球 = C(7,6) = <b>7 注</b> = <b>14 元</b></li>'
+   +'<li><b>胆拖</b>：<b>胆码</b>是每注都包含的号码，<b>拖码</b>用来补足剩余位置，'
+   +'比同等覆盖面的全复式省钱。比如 2 胆 + 5 拖 + 1 蓝 = C(5,4) = <b>5 注</b> = <b>10 元</b></li>'
+   +'<li>顶部用<b>红色大字</b>标出<b>共几注、总共多少钱</b>——'
+   +'复式的金额会<b>随选号个数成倍增长</b>，付款前务必再核对一次</li>'
+   +'<li>福彩3D / 排列三 为<b>直选复式</b>：每位各选多个数字，'
+   +'注数 = 百位个数 × 十位个数 × 个位个数</li>'
+   +'<li>⚠️ 复式与胆拖<b>只改变覆盖面，不改变中奖概率的数学期望</b>：'
+   +'花得越多覆盖的组合越多，但每一注的中奖概率完全相同</li></ul>'
+
+   +'<h4>福彩3D / 排列三（按位玩法）</h4><ul>'
+   +'<li><b>开奖记录</b>多两列：<b>形态</b>（豹子＝三位相同 / 组三＝有两个相同 / '
+   +'组六＝三位各不相同）与<b>跨度</b>（最大数 − 最小数）</li>'
+   +'<li><b>号码走势</b>改为按位折线：<b>百位 / 十位 / 个位</b>各一条线（纵轴 0-9），'
+   +'另加<b>和值走势</b>（0-27）</li>'
+   +'<li><b>出现次数</b>与<b>冷热分布</b>都按位统计（每位 0-9 各出现多少次）</li>'
+   +'<li><b>我的选号</b>按位选号：每位各选一个 0-9；添加后自动与最新一期比对</li>'
+   +'<li><b>中奖核对</b>判定三种奖级：<b>直选 1040 元</b>（三位数字与顺序完全相同）、'
+   +'<b>组选三 346 元</b>（数字相同、顺序不限，含两个相同数字）、'
+   +'<b>组选六 173 元</b>（数字相同、顺序不限，三个数字各不相同）</li>'
+   +'<li>注意：按位玩法的号码<b>分顺序</b>，1 2 3 与 3 2 1 不是同一注</li></ul>'
 
    +'<h4>菜单（第一个标签页）</h4><p>点标签栏最左侧的<b>「菜单」</b>打开左侧抽屉：'
    +'<b>功能说明</b>、<b>数据来源</b>、<b>刷新数据</b>（强制重新抓取）、'
-   +'<b>清除本机选号</b>。</p>'
+   +'<b>清除本机选号</b>、<b>显示模式</b>（浅色 ↔ 深色）</p>'
+   +'<p>若页面开启了<b>访问授权</b>，菜单里会多出一项「访问授权」：'
+   +'显示有效期、本机授权码，可复制保存或清除本机授权。</p>'
+   +'<p>管理员登录后，菜单会常驻多出一项<b>「生成授权码」</b>（签发授权码），'
+   +'并隐藏「访问授权」——管理员本人免激活，无需再显示。</p>'
+   +'<h4>管理员与生成授权码</h4><ul>'
+   +'<li>菜单里<b>「管理员」</b>项用账号登录后，菜单会常驻多出一项<b>「生成授权码」</b>——'
+   +'关掉弹窗也还在，随时能打开签发，不用重新登录。</li>'
+   +'<li>签发时可按<b>天 / 周 / 月 / 年</b>设置有效期，一次生成 1~20 个，'
+   +'到期日实时预览，生成后可单个复制、复制全部或下载成名单。</li>'
+   +'<li>管理员本人<b>免激活</b>，所以菜单里不再显示「访问授权」；退出登录后本机授权一并失效。</li>'
+   +'<li>新签的码<b>不用重新构建或上传页面</b>，直接发给对方就能激活；每个码自带到期日。</li>'
+   +'<li>管理员本人<b>免激活</b>，退出登录后本机授权一并失效。</li>'
+   +'</ul>'
+   +'<p style="font-size:12px;color:#888">说明：签发和验证都在页面内完成，密钥也在 HTML 里。'
+   +'它拦得住随手转发，拦不住刻意破解；要真正不可伪造必须配后端。</p>'
+
+   +'<h4>深色模式与宽屏</h4><ul>'
+   +'<li>只有<b>浅色</b>和<b>深色</b>两种，默认<b>跟随时间自动切换</b>：'
+   +'每天 19:00 到次日 07:00 为深色，其余时间浅色，跨过时间点会自动换肤，不用手动管</li>'
+   +'<li>点菜单里的<b>「显示模式」</b>可在 <b>浅色 ↔ 深色</b> 之间直接切换；'
+   +'切到的值与当前时段一致时会自动回到「跟随时间」</li>'
+   +'<li>电脑宽屏下内容居中、字号加大，页签排成一行；手机保持单列</li>'
+   +'<li>开奖数据会缓存在本机，第二次打开更快（数据有更新时自动替换）</li></ul>'
 
    +'<h4>温馨提示</h4><p>彩票是完全随机的，任何号码的中奖概率都相同。'
    +'冷热、走势、出现次数仅为已开奖结果的统计，<b>不具备预测能力</b>。请理性购彩，量力而行。</p>'
    +'</div></div></div>';
   try{ localStorage.setItem(HELP_SEEN,'1'); }catch(e){}
 }
-function closeHelp(){ $('modal').innerHTML=''; }
+function closeHelp(){ _cpLast=null; $('modal').innerHTML=''; }
 
 /* ---------- 主流程 ---------- */
+/* 统一时间格式：YYYY-MM-DD HH:MM:SS */
+function fmtDt(dt){
+  var p=function(x){return (x<10?'0':'')+x;};
+  return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate())+' '
+       + p(dt.getHours())+':'+p(dt.getMinutes())+':'+p(dt.getSeconds());
+}
+/* 普通用户激活后，页面最顶端常驻显示授权到期时间（管理员免激活，不显示） */
+function licDaysLeft(exp){
+  try{
+    var a=new Date(exp+'T00:00:00'), b=new Date(licToday()+'T00:00:00');
+    return Math.max(0, Math.round((a-b)/86400000));
+  }catch(e){ return 0; }
+}
+function licTopBar(){
+  if(!LICENSE) return '';
+  if(admIn()) return '';                 /* 管理员本人免激活 */
+  var o=licGet(); if(!o||!o.code) return '';
+  var exp=(o.exp && /^\d{4}-/.test(o.exp))?o.exp:(LICENSE.expire||'');
+  if(!exp) return '';
+  var days=licDaysLeft(exp), warn=days<=7;
+  return '<div class="upd" style="'+(warn?'color:#c33;font-weight:600':'')+'">'
+    +'授权有效期至 '+esc(exp)+'（还剩 '+days+' 天）</div>';
+}
 function head(){
-  var d=D[S.lot], t=new Date(d.updatedAt*1000);
-  var s='<div class="upd">数据更新于 '+t.toLocaleString('zh-CN')
-    +(typeof EMBEDDED_BUILD!=='undefined'&&EMBEDDED_BUILD?'（数据已内置于本页面，无需联网）':(d.source==='live'?'（实时抓取）':'（缓存）'))+'</div>';
+  var d=D[S.lot], ts=Number(d&&d.updatedAt)*1000, t=(ts>0)?new Date(ts):null;
+  var txt=t?fmtDt(t):((d&&d.buildDate)?String(d.buildDate)
+      :((d&&d.rows&&d.rows.length)?String(d.rows[d.rows.length-1][1]):'未知'));
+  var s=licTopBar();
+  s+='<div class="upd">数据更新于 '+txt
+    +' · 当前时间 '+fmtDt(new Date())+'</div>';
   if(d.stale) s+='<div class="card"><div class="warn">当前为上次缓存数据（官方接口暂时不可用），稍后会自动恢复实时。</div></div>';
   return s;
+}
+/* 金额简写：1056837777 → 10.57 亿 */
+function moneyShort(v){
+  v=Number(v)||0;
+  if(v>=1e8) return (v/1e8).toFixed(2)+' 亿';
+  if(v>=1e4) return (v/1e4).toFixed(1)+' 万';
+  return String(v);
+}
+function moneyFull(v){ return (Number(v)||0).toLocaleString('zh-CN'); }
+/* 当前奖池：只在该奖池对应期号与最新一期一致时才显示，避免显示过期金额 */
+function poolOf(d){
+  var p=d&&d.pool;
+  if(!p||!p.amount) return null;
+  return p;
 }
 function latest(){
   var d=D[S.lot], r=d.rows[d.rows.length-1];
   if(!r) return '';
+  var p=poolOf(d);
+  var poolHtml='';
+  if(p){
+    var stale = p.issue && String(p.issue)!==String(r[0]);
+    var fyj = (S.lot==='ssq') ? (p.fyj||{}) : {};
+    var fyjTxt='';
+    if(fyj.money && fyj.count){
+      fyjTxt=' <span style="color:#e8402a">福运奖 '+fyj.money+' 元</span>'
+        +' <span style="color:#aaa">· '+moneyShort(fyj.count)+' 注中奖</span>';
+    } else if(S.lot==='ssq'){
+      fyjTxt=' <span style="color:#aaa">本期无福运奖</span>';
+      if(p.fyjNote) fyjTxt+=' <span style="color:#aaa">（'+esc(p.fyjNote)+'）</span>';
+    }
+    poolHtml='<div style="margin-top:7px;padding-top:7px;border-top:1px dashed #eee;'
+      +'font-size:12px;color:#666">当前奖池 <b style="color:#e8402a;font-size:14px">'
+      +moneyShort(p.amount)+'</b> 元'
+      +(p.sales?' <span style="color:#aaa">· 当期销量 '+moneyShort(p.sales)+'</span>':'')
+      +(stale?' <span style="color:#aaa">（'+esc(p.issue)+' 期）</span>':'')+'</div>'
+      +(fyjTxt?'<div style="font-size:12px;color:#666;margin-top:2px">'+fyjTxt+'</div>':'');
+  }
   return '<div class="card"><div class="sec">最新一期（'+d.name+'）</div>'
     +'<div style="padding:12px"><div style="font-size:12px;color:#888">'+r[0]+' 期 · '+r[1]+'</div>'
     +'<div style="margin:8px 0">'+fmtBalls(r,true)+'</div>'
-    +'<div style="font-size:12px;color:#666">和值 '+sumRed(r)+' · 奇偶比 '+oddStr(r)
-    +(rbOverlap(r)?' · <span style="color:#c33">'+d.blueLabel+'与'+d.redLabel+'有重合</span>':'')+'</div></div></div>';
+    +'<div style="font-size:12px;color:#666">'+(isPos()
+      ? ('和值 '+sumRed(r)+' · 跨度 '+span3(r)+' · '+form3(r[2]))
+      : ('和值 '+sumRed(r)+' · 奇偶比 '+oddStr(r)
+         +(rbOverlap(r)?' · <span style="color:#c33">'+d.blueLabel+'与'+d.redLabel+'有重合</span>':'')))
+    +'</div>'
+    +poolHtml
+    +'<div class="cdown" id="cdown"></div>'
+    +'</div></div>';
 }
-function setLot(l){S.lot=l;S.listLimit=60;S.pickRed=[];S.pickBlue=[];S.trendSel={};boot()}
-function setTab(t){S.tab=t;render()}
+/* ================= 按位玩法：福彩3D / 排列三 ================= */
+/* 与双色球/大乐透的区别：3 位数字、每位 0-9、可重复、有顺序 */
+function isPos(){ var d=D[S.lot]; return !!(d&&d.positional); }
+function span3(r){ var a=r[2]; return Math.max.apply(null,a)-Math.min.apply(null,a); }
+function form3(a){
+  var u={}, i, n=0;
+  for(i=0;i<a.length;i++){ if(!u[a[i]]){u[a[i]]=1;n++;} }
+  return n===1?'豹子':(n===2?'组三':'组六');
+}
+function posCnt(rows,pos){
+  var cnt=[],i; for(i=0;i<=9;i++) cnt[i]=0;
+  for(i=0;i<rows.length;i++){ var v=rows[i][2][pos]; if(v>=0&&v<=9) cnt[v]++; }
+  return cnt;
+}
+/* 3D / 排列三 奖级：直选 1040、组三 346、组六 173（固定奖） */
+function posPrize(my, hit){
+  var i, straight=true;
+  for(i=0;i<3;i++) if(my[i]!==hit[i]) straight=false;
+  if(straight) return {name:'直选', amt:1040, desc:'三位数字与顺序完全相同'};
+  var a=my.slice().sort().join(','), b=hit.slice().sort().join(',');
+  if(a!==b) return null;
+  return form3(hit)==='组三' ? {name:'组选三', amt:346, desc:'数字相同、顺序不限（含两个相同数字）'}
+                            : {name:'组选六', amt:173, desc:'数字相同、顺序不限（三个数字各不相同）'};
+}
+function posBetResult(bet){
+  var d=D[S.lot], rows=d.rows, last=rows[rows.length-1];
+  var hit=last[2], p=posPrize(bet.r, hit);
+  return {issue:last[0], p:p, hit:hit};
+}
+
+/* ---------- 开奖记录（按位） ---------- */
+function posListRows(){
+  var arr=D[S.lot].rows.slice(), so=S.pSort;
+  arr.sort(function(a,b){
+    var x,y;
+    if(so.k===0){x=a[0];y=b[0]}
+    else if(so.k===1){x=a[1];y=b[1]}
+    else if(so.k===2){x=a[2].join('');y=b[2].join('')}
+    else {x=sumRed(a);y=sumRed(b)}
+    if(x<y) return -so.dir; if(x>y) return so.dir; return a[0]<b[0]?1:-1;
+  });
+  return arr;
+}
+function renderList3(){
+  var d=D[S.lot], all=posListRows(), q=String(S.listQ||'').trim();
+  if(q) all=all.filter(function(r){
+    return String(r[0]).indexOf(q)>=0 || String(r[1]).indexOf(q)>=0; });
+  var show=all.slice(0,S.listLimit);
+  var cols=['期号','开奖日期','开奖号码','形态','和值','跨度'];
+  var h='<div class="card">'
+   +'<div class="frow" style="padding:10px 12px 0;margin-bottom:0">'
+   +'<input class="ipt wide" type="text" inputmode="numeric" placeholder="搜索期号或日期，如 2026286 或 2026-10-27" '
+   +'value="'+esc(S.listQ)+'" oninput="setListQ(this.value)">'
+   +(q?'<span style="font-size:12.5px;color:#c33;cursor:pointer;padding:7px 4px" onclick="setListQ(\'\')">清除</span>':'')
+   +'</div>'
+   +'<div class="bar"><label>'+(q?('匹配 <b>'+all.length+'</b> 期'):('共 '+all.length+' 期'))+'</label>'
+   +'<label style="color:#aaa;font-size:12px">默认期号降序 ▼，点击表头切换</label></div>'
+   +'<div class="scroll"><table><thead><tr>';
+  for(var c=0;c<cols.length;c++)
+    h+='<th class="'+(S.pSort.k===c?'act':'')+'" onclick="sortPosList('+c+')">'
+      +cols[c]+(S.pSort.k===c?'<span class="ar">'+(S.pSort.dir===1?'▲':'▼')+'</span>':'')+'</th>';
+  h+='</tr></thead><tbody>';
+  for(var i=0;i<show.length;i++){
+    var r=show[i];
+    h+='<tr><td>'+r[0]+'</td><td class="l">'+r[1]+'</td>'
+      +'<td>'+fmtBalls(r)+'</td><td>'+form3(r[2])+'</td>'
+      +'<td>'+sumRed(r)+'</td><td>'+span3(r)+'</td></tr>';
+  }
+  h+='</tbody></table></div>';
+  if(q && !all.length)
+    h+='<div class="empty">没有匹配的期号<br><span style="font-size:12px">试试输完整期号，如 '
+      +D[S.lot].rows[D[S.lot].rows.length-1][0]+'</span></div>';
+  if(S.listLimit<all.length)
+    h+='<button class="more" onclick="S.listLimit+=60;render()">加载更多（还有 '+(all.length-S.listLimit)+' 期）</button>';
+  h+='<div class="note">形态：<b>豹子</b>＝三位相同（如 5 5 5）；<b>组三</b>＝有两个相同；'
+    +'<b>组六</b>＝三位各不相同。跨度＝最大数 − 最小数。</div></div>';
+  return h;
+}
+function sortPosList(k){
+  if(S.pSort.k===k) S.pSort.dir*=-1; else {S.pSort.k=k;S.pSort.dir=1}
+  render();
+}
+
+/* ---------- 号码走势（按位折线） ---------- */
+function renderTrend3(){
+  var d=D[S.lot], all=d.rows, lim=S.distLimit||30;
+  var disp=all.slice(Math.max(0,all.length-lim));
+  if(disp.length<2) disp=all.slice(-2);
+  var N=disp.length, W=Math.max(320,N*16), H=210, PL=30, PT=16, PB=26;
+  var iw=W-PL-14, ih=H-PT-PB;
+  function X(i){ return PL + (N>1? i*iw/(N-1) : iw/2); }
+  function Y(v){ return PT + ih - (v/9)*ih; }
+  var cols=['#e8402a','#2b6cd4','#1a9c46'], labs=['百位','十位','个位'];
+  var sv='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" '
+        +'style="display:block;background:var(--surface);border-radius:8px">';
+  /* 横向网格 0/3/6/9 */
+  for(var g=0;g<=9;g+=3){
+    sv+='<line x1="'+PL+'" y1="'+Y(g)+'" x2="'+(W-14)+'" y2="'+Y(g)+'" '
+       +'stroke="'+(typeof svgInk==='function'?(svgInk().zebra):'#eee')+'" stroke-width="1"/>'
+       +'<text x="'+(PL-8)+'" y="'+(Y(g)+4)+'" font-size="10" fill="'
+       +(typeof svgInk==='function'?(svgInk().head):'#aaa')+'" text-anchor="end">'+g+'</text>';
+  }
+  for(var p=0;p<3;p++){
+    var pts='';
+    for(var i=0;i<N;i++) pts+=(i?' ':'')+X(i).toFixed(1)+','+Y(disp[i][2][p]).toFixed(1);
+    sv+='<polyline points="'+pts+'" fill="none" stroke="'+cols[p]+'" stroke-width="1.6" '
+       +'stroke-linejoin="round"/>';
+    for(var j=0;j<N;j++)
+      sv+='<circle cx="'+X(j).toFixed(1)+'" cy="'+Y(disp[j][2][p]).toFixed(1)+'" r="2.2" fill="'+cols[p]+'"/>';
+  }
+  /* x 轴首末期号 */
+  sv+='<text x="'+PL+'" y="'+(H-8)+'" font-size="10" fill="'
+     +(typeof svgInk==='function'?(svgInk().head):'#aaa')+'">'+disp[0][0]+'</text>'
+     +'<text x="'+(W-14)+'" y="'+(H-8)+'" font-size="10" text-anchor="end" fill="'
+     +(typeof svgInk==='function'?(svgInk().head):'#aaa')+'">'+disp[N-1][0]+'</text>';
+  sv+='</svg>';
+  var h='<div class="card"><div class="bar"><label>按位走势</label>'
+   +'<label style="color:#aaa;font-size:12px">共 '+all.length+' 期，显示最新 '+N+' 期</label>'
+   +'<select onchange="S.distLimit=+this.value;render()">'
+   +[20,30,50,100].map(function(o){return '<option value="'+o+'"'+((S.distLimit||30)===o?' selected':'')+'>'+o+' 期</option>'}).join('')
+   +'</select></div>';
+  h+=sv;
+  h+='<div class="lgd"><span class="lgb" style="background:#e8402a"></span>百位'
+    +'<span class="lgb" style="background:#2b6cd4;margin-left:8px"></span>十位'
+    +'<span class="lgb" style="background:#1a9c46;margin-left:8px"></span>个位</div>';
+  /* 和值走势 */
+  var H2=150, iw2=W-PL-14, ih2=H2-PT-24;
+  function Y2(v){ return PT + ih2 - (v/27)*ih2; }
+  var sv2='<svg viewBox="0 0 '+W+' '+H2+'" width="100%" height="'+H2+'" '
+        +'style="display:block;background:var(--surface);border-radius:8px;margin-top:10px">';
+  var p2='';
+  for(var t=0;t<N;t++) p2+=(t?' ':'')+X(t).toFixed(1)+','+Y2(sumRed(disp[t])).toFixed(1);
+  sv2+='<polyline points="'+p2+'" fill="none" stroke="#c98a00" stroke-width="1.6"/>';
+  sv2+='<text x="'+(PL-8)+'" y="'+(PT+10)+'" font-size="10" text-anchor="end" fill="'
+      +(typeof svgInk==='function'?(svgInk().head):'#aaa')+'">27</text>'
+      +'<text x="'+(PL-8)+'" y="'+(PT+ih2)+'" font-size="10" text-anchor="end" fill="'
+      +(typeof svgInk==='function'?(svgInk().head):'#aaa')+'">0</text>';
+  sv2+='</svg>';
+  h+='<div class="sec">和值走势（0 ~ 27）</div>'+sv2;
+  h+='<div class="note">按位玩法每位 0-9，纵轴为该位数字；和值＝三位之和。'
+    +'走势只是已开奖结果的连线，不代表任何规律。</div></div>';
+  return h;
+}
+
+/* ---------- 出现次数（按位） ---------- */
+function renderFreq3(){
+  var d=D[S.lot], rows=d.rows, N=rows.length, i, n;
+  var h='<div class="card"><div class="hint">默认按出现次数升序 ▲，点击表头切换排序字段与升降序</div>';
+  for(var p=0;p<3;p++) h+=freq3Block(p,d,rows,N);
+  /* 和值分布 */
+  var sc=[], mx=0;
+  for(i=0;i<=27;i++) sc[i]=0;
+  for(i=0;i<N;i++){ var s=sumRed(rows[i]); sc[s]++; if(sc[s]>mx) mx=sc[s]; }
+  h+='<div class="sec">和值分布（0 ~ 27）</div><div class="heatgrid">';
+  for(i=0;i<=27;i++){
+    var r=Math.round(sc[i]/mx*255);
+    h+='<div class="hcell" style="background:rgb('+(255-r)+','+(255-r)+',255)">'
+      +'<div class="hn">'+i+'</div><div class="hc">'+sc[i]+'次</div></div>';
+  }
+  h+='</div>';
+  h+='<div class="note">统计区间：'+rows[0][0]+' ~ '+rows[N-1][0]+'，共 '+N+' 期。'
+    +'每位数字理论上出现概率均为 10%，实际差异属于正常随机波动。</div></div>';
+  return h;
+}
+
+/* 3D / 排列三 出现次数：与双色球一致，默认按出现次数升序，表头可切字段与升降序 */
+function freq3Block(p,d,rows,N){
+  var so=S.fSort3['p'+p], cnt=posCnt(rows,p), arr=[], n;
+  for(n=0;n<=9;n++) arr.push({num:n, cnt:cnt[n], pct:cnt[n]/N*100});
+  var cols=[['num','数字'],['cnt','出现次数'],['pct','占比%']];
+  arr.sort(function(a,b){
+    var x=a[cols[so.k][0]], y=b[cols[so.k][0]];
+    if(x<y) return -so.dir; if(x>y) return so.dir; return a.num-b.num;
+  });
+  var h='<div class="sec">'+(d.posLabels?d.posLabels[p]:('第'+(p+1)+'位'))+'（0-9）</div>'
+    +'<div class="scroll"><table><thead><tr>';
+  for(var c=0;c<cols.length;c++)
+    h+='<th class="'+(so.k===c?'act':'')+'" onclick="sortFreq3('+p+','+c+')">'
+      +cols[c][1]+(so.k===c?'<span class="ar">'+(so.dir===1?'▲':'▼')+'</span>':'')+'</th>';
+  h+='</tr></thead><tbody>';
+  for(var i=0;i<arr.length;i++)
+    h+='<tr><td>'+arr[i].num+'</td><td>'+arr[i].cnt+'</td><td>'+arr[i].pct.toFixed(2)+'</td></tr>';
+  return h+'</tbody></table></div>';
+}
+function sortFreq3(p,k){
+  var so=S.fSort3['p'+p];
+  if(so.k===k) so.dir*=-1; else {so.k=k;so.dir=1}
+  render();
+}
+
+/* ---------- 冷热分布（按位） ---------- */
+function renderHeat3(){
+  var d=D[S.lot], sc=scopeRows(S.heatWin||'month'), rows=sc.rows, N=rows.length;
+  var h='<div class="card"><div class="bar"><label>窗口</label>'
+   +'<select onchange="S.heatWin=this.value;render()">'
+   +[['month','近一个月'],['year','近一年'],['all','全部历史']]
+     .map(function(o){return '<option value="'+o[0]+'"'+((S.heatWin||'month')===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')
+   +'</select>'
+   +'<label style="color:#aaa;font-size:12px">'+sc.label+' · '+N+' 期</label>'
+   +'<div class="seg"><button class="'+(S.heatSort==='num'?'on':'')+'" onclick="S.heatSort=\'num\';render()">按号码</button>'
+   +'<button class="'+(S.heatSort==='heat'?'on':'')+'" onclick="S.heatSort=\'heat\';render()">按冷热</button></div>'
+   +'</div>';
+  var exp=N/10, sd=Math.sqrt(N*0.1*0.9)||1;
+  for(var p=0;p<3;p++){
+    var cnt=posCnt(rows,p), arr=[];
+    for(var n=0;n<=9;n++) arr.push({num:n, cnt:cnt[n], z:(cnt[n]-exp)/sd});
+    /* 与双色球一致：按号码 0-9，或按冷热（冷→热） */
+    if(S.heatSort==='heat') arr.sort(function(a,b){return a.z-b.z});
+    else arr.sort(function(a,b){return a.num-b.num});
+    h+='<div class="sec">'+(d.posLabels?d.posLabels[p]:('第'+(p+1)+'位'))+'（0-9）</div><div class="heatgrid">';
+    for(var i=0;i<arr.length;i++){
+      h+='<div class="hcell" style="background:'+heatColor(arr[i].z)+'">'
+        +'<div class="hn">'+arr[i].num+'</div><div class="hc">'+arr[i].cnt+'次</div></div>';
+    }
+    h+='</div>';
+    /* 该位最热 / 最冷 */
+    var hot=arr.slice().sort(function(a,b){return b.z-a.z}).slice(0,3);
+    var cold=arr.slice().sort(function(a,b){return a.z-b.z}).slice(0,3);
+    h+='<div class="toprow"><span style="color:#888">最热</span>';
+    hot.forEach(function(r){ h+='<span class="chip" style="background:'+heatColor(r.z)+'">'+r.num+' '+r.cnt+'次</span>'; });
+    h+='</div><div class="toprow"><span style="color:#888">最冷</span>';
+    cold.forEach(function(r){ h+='<span class="chip" style="background:'+heatColor(r.z)+'">'+r.num+' '+r.cnt+'次</span>'; });
+    h+='</div>';
+  }
+  h+='<div class="lgd"><span class="lgb" style="background:#3b6fd4"></span>极冷'
+    +'<span class="lgb" style="background:#8ab0e8;margin-left:6px"></span>偏冷'
+    +'<span class="lgb" style="background:#b0b0b0;margin-left:6px"></span>正常'
+    +'<span class="lgb" style="background:#ee9182;margin-left:6px"></span>偏热'
+    +'<span class="lgb" style="background:#d63a2a;margin-left:6px"></span>极热</div>';
+  h+='<div class="note">每位每期出现某数字的理论概率为 10%，冷热按偏离理论次数的标准差判定，'
+    +'仅反映已开奖结果，无预测能力。</div></div>';
+  return h;
+}
+
+/* ---------- 我的选号（按位，一位一个数字） ---------- */
+function togglePick3(pos,n){
+  S.pick3[pos] = (S.pick3[pos]===n) ? null : n;
+  render();
+}
+function randPick3(){ S.pick3=[Math.floor(Math.random()*10),Math.floor(Math.random()*10),Math.floor(Math.random()*10)]; render(); }
+function clearPick3(){ S.pick3=[null,null,null]; render(); }
+function addBet3(){
+  var i, miss=[];
+  for(i=0;i<3;i++) if(S.pick3[i]===null||S.pick3[i]===undefined) miss.push(i);
+  if(miss.length){ toast('请为每一位各选一个数字'); return; }
+  var bet={r:S.pick3.slice(), b:[], t:Date.now()};
+  var a=getBets(); a.push(bet); saveBets(a);
+  addRec(S.lot, bet);
+  S.pick3=[null,null,null];
+  render();
+}
+function renderMine3(){
+  var d=D[S.lot], h='<div class="card"><div class="sec">选择号码（每位各选一个 0-9）</div>';
+  for(var p=0;p<3;p++){
+    h+='<div style="padding:6px 12px"><div style="font-size:12px;color:#888;margin-bottom:5px">'
+      +(d.posLabels?d.posLabels[p]:('第'+(p+1)+'位'))+'</div><div class="grid">';
+    for(var n=0;n<=9;n++)
+      h+='<span class="nb'+(S.pick3[p]===n?' sel':'')+'" onclick="togglePick3('+p+','+n+')">'+n+'</span>';
+    h+='</div></div>';
+  }
+  h+='<div class="betops" style="margin:10px 12px 0">'
+    +'<button onclick="randPick3()">随机一注</button>'
+    +'<button class="p" onclick="addBet3()">添加到我的选号</button>'
+    +'<button onclick="clearPick3()">清空</button></div>';
+  h+='</div>';
+  /* 已保存 */
+  var bets=getBets();
+  h+='<div class="card"><div class="sec">我的选号（'+bets.length+' 注）</div>';
+  if(!bets.length){
+    h+='<div class="empty">还没有保存的号码</div>';
+  }else{
+    var last=D[S.lot].rows[D[S.lot].rows.length-1];
+    for(var i=bets.length-1;i>=0;i--){
+      var bet=bets[i], r=posBetResult(bet);
+      h+='<div class="betcard"><div class="bettop"><div>'+fmtBalls({2:bet.r,3:[]},true)+'</div></div>'
+        +'<div style="font-size:12px;color:#666;margin-top:4px">'
+        +(bet.t?('保存于 '+fmtTs(bet.t)):'')+'</div>';
+      if(r.p)
+        h+='<div class="bres hit">🎉 <span class="bn">'+r.p.name+'</span>'
+          +' · <span class="ba">'+r.p.amt+' 元</span>'
+          +' <span style="opacity:.75">（'+esc(r.issue)+' 期 · 开奖 '+r.hit.join(' ')+'）</span></div>';
+      else
+        h+='<div class="bres">未中奖 <span style="opacity:.75">（'+esc(r.issue)
+          +' 期 · 开奖 '+r.hit.join(' ')+'）</span></div>';
+      h+='<div class="betops" style="margin:8px 0 0">'
+        +'<button onclick="copyBet('+i+')">复制这注</button>'
+        +'<button class="delbtn" onclick="delBet('+i+')">删除</button></div></div>';
+    }
+  }
+  h+='<div class="note">按位玩法的号码<b>有顺序</b>：1 2 3 与 3 2 1 不是同一注。'
+    +'直选需三位数字与顺序完全相同。</div></div>';
+  return h;
+}
+
+/* ---------- 中奖核对（按位） ---------- */
+function setChk3(pos,n){ S.chk3[pos]=(S.chk3[pos]===n)?null:n; render(); }
+function renderCheck3(){
+  var d=D[S.lot], rows=d.rows, h='<div class="card"><div class="sec">输入你的号码</div>';
+  for(var p=0;p<3;p++){
+    h+='<div style="padding:6px 12px"><div style="font-size:12px;color:#888;margin-bottom:5px">'
+      +(d.posLabels?d.posLabels[p]:('第'+(p+1)+'位'))+'</div><div class="grid">';
+    for(var n=0;n<=9;n++)
+      h+='<span class="nb'+(S.chk3[p]===n?' sel':'')+'" onclick="setChk3('+p+','+n+')">'+n+'</span>';
+    h+='</div></div>';
+  }
+  /* 对比期号 */
+  var idx=rows.length-1;
+  if(S.chkMode==='issue' && S.chkIssue){
+    for(var i=0;i<rows.length;i++) if(String(rows[i][0])===String(S.chkIssue)) idx=i;
+  }
+  var row=rows[idx], hit=row[2], ready=S.chk3.every(function(v){return v!==null&&v!==undefined;});
+  h+='<div class="frow" style="padding:0 12px 8px;margin:0"><div class="seg">'
+    +'<button class="'+(S.chkMode==='latest'?'on':'')+'" onclick="setChkMode(\'latest\')">最新一期</button>'
+    +'<button class="'+(S.chkMode==='issue'?'on':'')+'" onclick="setChkMode(\'issue\')">指定期号</button></div>'
+    +(S.chkMode==='issue'
+      ? '<input class="ipt" type="text" inputmode="numeric" placeholder="输入期号" value="'+esc(S.chkIssue)+'" oninput="setChkIssue(this.value)">'
+      : '')
+    +'</div>';
+  if(ready){
+    var p=posPrize(S.chk3, hit);
+    h+='<div class="bres'+(p?' hit':'')+'" style="margin:8px 12px 12px;font-size:13.5px">'
+      +(p ? ('🎉 <b>'+p.name+'</b> · <b>'+p.amt+' 元</b><br><span style="opacity:.8">'+p.desc+'</span>')
+          : ('未中奖'))
+      +'<br><span style="opacity:.75">对比 '+row[0]+' 期（'+row[1]+'）开奖号码：'+hit.join(' ')+'</span></div>';
+  }else{
+    h+='<div class="bres" style="margin:8px 12px 12px">请为每一位各选一个数字</div>';
+  }
+  h+='<div class="betops" style="margin:0 12px 10px"><button onclick="S.chk3=[null,null,null];render()">清空</button></div>';
+  h+='</div>';
+  /* 奖项说明 */
+  h+='<div class="card"><div class="sec">奖项说明（固定奖）</div><div class="scroll"><table>'
+    +'<thead><tr><th>中奖条件</th><th>奖级</th><th>单注奖金</th></tr></thead><tbody>'
+    +'<tr><td>三位数字与顺序完全相同</td><td>直选</td><td>1040 元</td></tr>'
+    +'<tr><td>数字相同、顺序不限（有两个相同）</td><td>组选三</td><td>346 元</td></tr>'
+    +'<tr><td>数字相同、顺序不限（三个各不相同）</td><td>组选六</td><td>173 元</td></tr>'
+    +'</tbody></table></div>'
+    +'<div class="note">'+esc(d.name)+'为固定奖玩法，奖金不随销量浮动。'
+    +'以上为常规奖级，具体以官方公告为准。</div></div>';
+  return h;
+}
+
+/* ================= 复式 / 胆拖 ================= */
+function C(n,k){
+  if(k<0||k>n||n<0) return 0;
+  k=Math.min(k,n-k); var r=1,i;
+  for(i=1;i<=k;i++){ r=r*(n-k+i)/i; }
+  return Math.round(r);
+}
+function toggleFs(arr,n){
+  var i=arr.indexOf(n);
+  if(i>=0) arr.splice(i,1); else arr.push(n);
+  arr.sort(function(a,b){return a-b});
+  render();
+}
+function comboList(arr,k){
+  var out=[];
+  (function rec(start,cur){
+    if(cur.length===k){ out.push(cur.slice()); return; }
+    for(var i=start;i<arr.length;i++){ cur.push(arr[i]); rec(i+1,cur); cur.pop(); }
+  })(0,[]);
+  return out;
+}
+function fsCalc(){
+  /* 返回 {ok, notes, amt, detail, msg} */
+  var d=D[S.lot];
+  if(isPos()){
+    var a=S.fs3, i, n=a[0].length*a[1].length*a[2].length;
+    if(!n) return {ok:false, msg:'请为每一位至少选一个数字'};
+    var list=[];
+    if(n<=200){
+      for(i=0;i<a[0].length;i++) for(var j=0;j<a[1].length;j++) for(var k=0;k<a[2].length;k++)
+        list.push([a[0][i],a[1][j],a[2][k]]);
+    }
+    return {ok:true, notes:n, amt:n*2, list:list,
+            msg:'直选复式：百位 '+a[0].length+' 个 × 十位 '+a[1].length+' 个 × 个位 '+a[2].length+' 个'};
+  }
+  if(S.fsMode==='fushi'){
+    var R=S.fsRed.length, B=S.fsBlue.length;
+    if(R<d.redCount) return {ok:false, msg:d.redLabel+'至少选 '+d.redCount+' 个（当前 '+R+' 个）'};
+    if(B<d.blueCount) return {ok:false, msg:d.blueLabel+'至少选 '+d.blueCount+' 个（当前 '+B+' 个）'};
+    var c=C(R,d.redCount)*C(B,d.blueCount);
+    var l2=[];
+    if(c<=200){
+      var rc=comboList(S.fsRed,d.redCount), bc=comboList(S.fsBlue,d.blueCount);
+      for(var x=0;x<rc.length;x++) for(var y=0;y<bc.length;y++) l2.push({r:rc[x], b:bc[y]});
+    }
+    return {ok:true, notes:c, amt:c*2, list:l2,
+            msg:'复式：'+d.redLabel+'选 '+R+' 个（C('+R+','+d.redCount+')='+C(R,d.redCount)+'）'
+                +' × '+d.blueLabel+'选 '+B+' 个（C('+B+','+d.blueCount+')='+C(B,d.blueCount)+'）'};
+  }
+  /* 胆拖 */
+  var dan=S.fsDan.length, tuo=S.fsTuo.length, B2=S.fsBlue.length;
+  if(dan<1) return {ok:false, msg:'请至少选 1 个胆码'};
+  if(dan>=d.redCount) return {ok:false, msg:'胆码最多选 '+(d.redCount-1)+' 个（当前 '+dan+' 个）'};
+  if(dan+tuo<d.redCount) return {ok:false, msg:'胆码 + 拖码至少要 '+d.redCount+' 个（当前 '+(dan+tuo)+' 个）'};
+  if(B2<d.blueCount) return {ok:false, msg:d.blueLabel+'至少选 '+d.blueCount+' 个（当前 '+B2+' 个）'};
+  var need=d.redCount-dan;
+  var c3=C(tuo,need)*C(B2,d.blueCount);
+  var l3=[];
+  if(c3<=200){
+    var tc=comboList(S.fsTuo,need), b3=comboList(S.fsBlue,d.blueCount);
+    for(var m=0;m<tc.length;m++) for(var q=0;q<b3.length;q++)
+      l3.push({r:S.fsDan.concat(tc[m]).sort(function(a,b){return a-b}), b:b3[q]});
+  }
+  return {ok:true, notes:c3, amt:c3*2, list:l3,
+          msg:'胆拖：胆码 '+dan+' 个 + 拖码 '+tuo+' 个（C('+tuo+','+need+')='+C(tuo,need)+'）'
+              +' × '+d.blueLabel+' '+C(B2,d.blueCount)};
+}
+function fsText(){
+  var r=fsCalc(); if(!r.ok) return '';
+  if(isPos()) return S.fs3[0].join('')+' * '.replace('*','')+'';
+  return '';
+}
+function fsCopy(){
+  var r=fsCalc();
+  if(!r.ok){ toast(r.msg); return; }
+  var t;
+  if(isPos()){
+    t=(S.fs3[0].join('')+' | '+S.fs3[1].join('')+' | '+S.fs3[2].join(''))
+      +'\n直选复式 '+r.notes+' 注，'+r.amt+' 元';
+  }else{
+    if(S.fsMode==='fushi')
+      t=D[S.lot].redLabel+' '+S.fsRed.join(' ')+'\n'+D[S.lot].blueLabel+' '+S.fsBlue.join(' ');
+    else
+      t='胆码 '+S.fsDan.join(' ')+'\n拖码 '+S.fsTuo.join(' ')+'\n'+D[S.lot].blueLabel+' '+S.fsBlue.join(' ');
+    t+='\n'+r.notes+' 注，'+r.amt+' 元';
+  }
+  copyText(t);
+}
+function renderFsdt(){
+  var d=D[S.lot], h='';
+  var r=fsCalc();
+  /* 号码盘 */
+  if(isPos()){
+    h+='<div class="card"><div class="sec">直选复式（每位可多选）</div>';
+    for(var p=0;p<3;p++){
+      h+='<div style="padding:6px 12px"><div style="font-size:12px;color:#888;margin-bottom:5px">'
+        +(d.posLabels?d.posLabels[p]:('第'+(p+1)+'位'))+'（已选 '+S.fs3[p].length+' 个）</div><div class="grid">';
+      for(var n=0;n<=9;n++)
+        h+='<span class="nb'+(S.fs3[p].indexOf(n)>=0?' sel':'')+'" onclick="toggleFs(S.fs3['+p+'],'+n+')">'+n+'</span>';
+      h+='</div></div>';
+    }
+    h+='<div class="betops" style="margin:10px 12px 0">'
+      +'<button onclick="S.fs3=[[],[],[]];render()">清空</button>'
+      +'<button onclick="fsCopy()">复制号码</button></div></div>';
+  }else{
+    h+='<div class="card"><div class="bar"><label>投注方式</label>'
+      +'<div class="seg"><button class="'+(S.fsMode==='fushi'?'on':'')+'" onclick="S.fsMode=\'fushi\';render()">复式</button>'
+      +'<button class="'+(S.fsMode==='dantuo'?'on':'')+'" onclick="S.fsMode=\'dantuo\';render()">胆拖</button></div></div>';
+    if(S.fsMode==='fushi'){
+      h+='<div style="padding:6px 12px"><div style="font-size:12px;color:#888;margin-bottom:5px">'
+        +d.redLabel+'（1-'+d.redMax+'，已选 '+S.fsRed.length+' 个，至少 '+d.redCount+' 个）</div><div class="grid">';
+      for(var a=1;a<=d.redMax;a++)
+        h+='<span class="nb'+(S.fsRed.indexOf(a)>=0?' sel':'')+'" onclick="toggleFs(S.fsRed,'+a+')">'+pad(a)+'</span>';
+      h+='</div></div>';
+    }else{
+      h+='<div style="padding:6px 12px"><div style="font-size:12px;color:#888;margin-bottom:5px">'
+        +'胆码（每注必含，1 ~ '+(d.redCount-1)+' 个，已选 '+S.fsDan.length+' 个）</div><div class="grid">';
+      for(var b2=1;b2<=d.redMax;b2++)
+        h+='<span class="nb'+(S.fsDan.indexOf(b2)>=0?' sel':'')+'" onclick="toggleFs(S.fsDan,'+b2+')">'+pad(b2)+'</span>';
+      h+='</div></div>';
+      h+='<div style="padding:6px 12px"><div style="font-size:12px;color:#888;margin-bottom:5px">'
+        +'拖码（已选 '+S.fsTuo.length+' 个）</div><div class="grid">';
+      for(var c2=1;c2<=d.redMax;c2++){
+        var isDan=S.fsDan.indexOf(c2)>=0;
+        h+='<span class="nb'+(S.fsTuo.indexOf(c2)>=0?' sel':'')+'" style="'+(isDan?'opacity:.35':'')+'" '
+          +'onclick="toggleFs(S.fsTuo,'+c2+')">'+pad(c2)+'</span>';
+      }
+      h+='</div><div class="note" style="padding:4px 0 0">同一个号码不要同时做胆码和拖码</div></div>';
+    }
+    h+='<div style="padding:6px 12px"><div style="font-size:12px;color:#888;margin-bottom:5px">'
+      +d.blueLabel+'（1-'+d.blueMax+'，已选 '+S.fsBlue.length+' 个，至少 '+d.blueCount+' 个）</div><div class="grid">';
+    for(var e=1;e<=d.blueMax;e++)
+      h+='<span class="nb b'+(S.fsBlue.indexOf(e)>=0?' sel':'')+'" onclick="toggleFs(S.fsBlue,'+e+')">'+pad(e)+'</span>';
+    h+='</div></div>';
+    h+='<div class="betops" style="margin:10px 12px 0">'
+      +'<button onclick="S.fsRed=[];S.fsBlue=[];S.fsDan=[];S.fsTuo=[];render()">清空</button>'
+      +'<button onclick="fsCopy()">复制号码</button></div></div>';
+  }
+  /* 结果 */
+  h+='<div class="card"><div class="sec">投注金额</div>';
+  if(!r.ok){
+    h+='<div class="bres" style="margin:0 12px 12px">'+esc(r.msg)+'</div>';
+  }else{
+    h+='<div class="amtbig"><span>共 '+r.notes+' 注</span>'
+      +'<b>'+moneyFull(r.amt)+' 元</b></div>'
+      +'<div class="amtwarn">⚠️ 复式 / 胆拖的金额会<b>随选号个数成倍增长</b>，'
+      +'上面这个数字才是你实际要付的钱。付款前请再核对一次。</div>'
+      +'<div class="note" style="padding:0 12px 8px">'+esc(r.msg)+' · 每注 2 元</div>';
+    if(r.list && r.list.length && r.list.length<=200){
+      h+='<div class="sec">注明细（'+r.list.length+' 注）</div><div class="scroll" style="max-height:280px"><table>'
+        +'<thead><tr><th>#</th><th>号码</th></tr></thead><tbody>';
+      for(var i=0;i<r.list.length;i++){
+        var it=r.list[i];
+        h+='<tr><td>'+(i+1)+'</td><td>'+(isPos()? it.join(' ') : (fmtBalls({2:it.r,3:it.b})))+'</td></tr>';
+      }
+      h+='</tbody></table></div>';
+    }else if(r.list && r.list.length===0 && r.notes>200){
+      h+='<div class="note" style="padding:0 12px 10px">注数较多，未展开明细。</div>';
+    }
+  }
+  h+='</div>';
+  h+='<div class="card"><div class="sec">说明</div><div class="note" style="padding:0 12px 10px">'
+    +'<b>复式</b>：选出比单式更多的号码，覆盖这些号码的所有组合。<br>'
+    +'<b>胆拖</b>：胆码是每注都包含的号码，拖码用来补足剩余位置，比全复式省钱。<br>'
+    +'两者<b>只改变覆盖面，不改变中奖概率的数学期望</b>——花得越多，覆盖的组合越多，'
+    +'但每注的中奖概率完全相同。请量力而行。</div></div>';
+  return h;
+}
+
+function setLot(l){
+  S.lot=l;S.listLimit=60;S.listQ='';S.pickRed=[];S.pickBlue=[];S.trendSel={};
+  S.chkRed=[];S.chkBlue=[];S.chkMode='latest';S.chkIssue='';
+  S.genSum=null;S.genOdd='any';S.genBig='any';S.genZone='any';S.genMsg='';
+  S.pSort={k:0,dir:1};S.pick3=[null,null,null];S.chk3=[null,null,null];S.fs3=[[],[],[]];
+  S.fSort3={p0:{k:1,dir:1}, p1:{k:1,dir:1}, p2:{k:1,dir:1}};
+  S.fsRed=[];S.fsBlue=[];S.fsDan=[];S.fsTuo=[];S.recDel=-1;S.recClear=false;
+  boot();
+}
+function setTab(t){S.tab=t;S.recDel=-1;S.recClear=false;render()}
 function render(){
+  /* 未激活授权时直接显示锁屏，不渲染任何数据 */
+  if(licBlocked()){ var ml=$('main'); if(ml) ml.innerHTML=renderLock(); licInitMenu(); return; }
   if(!D[S.lot]){showLoading();return}
-  $('b-ssq').className = S.lot==='ssq'?'on':'';
-  $('b-dlt').className = S.lot==='dlt'?'on':'';
-  ['list','trend','freq','heat','mine'].forEach(function(t){$('t-'+t).className = S.tab===t?'on':''});
+  ['ssq','dlt','3d','pls'].forEach(function(l){
+    var b=$('b-'+l); if(b) b.className = S.lot===l?'on':'';
+  });
+  ['list','trend','freq','heat','mine','rec','check','fsdt'].forEach(function(t){$('t-'+t).className = S.tab===t?'on':''});
   $('t-menu').className = '';
   var m=$('main'), h=head()+latest();
-  if(S.tab==='list') h+=renderList();
-  else if(S.tab==='trend') h+=renderTrend();
-  else if(S.tab==='freq') h+=renderFreq();
-  else if(S.tab==='heat') h+=renderHeat();
+  var P=isPos();
+  if(S.tab==='list')   h+= P?renderList3():renderList();
+  else if(S.tab==='trend') h+= P?renderTrend3():renderTrend();
+  else if(S.tab==='freq')  h+= P?renderFreq3():renderFreq();
+  else if(S.tab==='heat')  h+= P?renderHeat3():renderHeat();
+  else if(S.tab==='mine')  h+= P?renderMine3():renderMine();
+  else if(S.tab==='check') h+= P?renderCheck3():renderCheck();
+  else if(S.tab==='fsdt')  h+= renderFsdt();
+  else if(S.tab==='rec')   h+= renderRec();
   else h+=renderMine();
+  /* 页签较多时，让当前页签滚到可见处 */
+  var tb=$('t-'+S.tab);
+  if(tb && tb.scrollIntoView) try{ tb.scrollIntoView({block:'nearest',inline:'center'}); }catch(e){}
   m.innerHTML=h;
+  startCountdown();          /* 倒计时每秒自更新，只改这一个元素，不整页重绘 */
 }
 function boot(){
+  if(licBlocked()){ var mb=$('main'); if(mb) mb.innerHTML=renderLock(); licInitMenu(); return; }
   ensure(S.lot).then(function(){
     render();
     var seen=null; try{ seen=localStorage.getItem(HELP_SEEN); }catch(e){}
     if(!seen) showHelp();
   }).catch(function(){});
 }
+licInitMenu();
 boot();
 </script>
 </body>
