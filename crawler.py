@@ -300,17 +300,22 @@ def fetch_dlt_recent(pages=3):
     """只抓最近 N 页（新期号在前面），用于增量更新"""
     from concurrent.futures import ThreadPoolExecutor
 
+    first_raw = []      # 首页原始数据，用于取奖池（_dlt_pool 需要接口原始结构）
+
     def job(p):
         try:
             v = _dlt_page(p, 100)
-            return [_parse_dlt_item(x) for x in v.get("list", [])]
+            return v
         except Exception:      # noqa
-            return []
+            return None
 
-    got = {}
+    got, raw1 = {}, {}
     with ThreadPoolExecutor(max_workers=min(pages, 4)) as ex:
-        for p, lst in zip(range(1, pages + 1), ex.map(job, range(1, pages + 1))):
-            got[p] = lst
+        for p, v in zip(range(1, pages + 1), ex.map(job, range(1, pages + 1))):
+            if p == 1 and v:
+                raw1 = v
+            got[p] = [_parse_dlt_item(x) for x in (v or {}).get("list", [])] \
+                if v else []
 
     seen, rows = set(), []
     for p in range(1, pages + 1):
@@ -326,7 +331,7 @@ def fetch_dlt_recent(pages=3):
         "redCount": 5, "blueCount": 2,
         "redLabel": "前区", "blueLabel": "后区",
         "rows": rows,
-        "pool": _dlt_pool(got.get(1) or []),
+        "pool": _dlt_pool(raw1.get("list") or []),
     }
 
 

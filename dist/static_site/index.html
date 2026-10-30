@@ -343,7 +343,7 @@ body.dark .toastbox{background:rgba(240,240,240,.94);color:#1a1a1a}
     <div id="side-lic" class="sideitem" onclick="closeSide();licShowInfo()" style="display:none">访问授权<em id="m-lic"></em></div>
     <div id="side-adm" class="sideitem" onclick="closeSide();admOpen()" style="display:none">管理员<em id="m-adm">未登录</em></div>
     <div id="side-admgen" class="sideitem" onclick="closeSide();admShowGen()" style="display:none">生成授权码<em>页面内签发</em></div>
-    <div class="sideitem" onclick="clearMyBets()">清除本机选号<em>仅本机</em></div>
+        <div class="sideitem" onclick="clearMyBets()">清除本机选号<em>仅本机</em></div>
     <div class="sidenote">数据实时取自中国福彩网 / 中国体彩官方接口，本页面不做任何预测。</div>
   </div>
 </div>
@@ -738,16 +738,16 @@ function admShowGen(){
     +'border:1px solid var(--bd2);border-radius:8px;background:var(--surface);color:var(--fg)">';
   for(var n=1;n<=20;n++) h+='<option value="'+n+'"'+(S.admN===n?' selected':'')+'>'+n+' 个</option>';
   h+='</select>';
-  h+='<div style="font-size:13px;font-weight:600;margin-bottom:8px">设备绑定（可选）</div>';
-  h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">'
-    +'<input id="adm-dev" type="text" maxlength="4" placeholder="设备码" value="'+esc(S.admDev)+'" '
-    +'oninput="S.admDev=this.value.toUpperCase()" '
-    +'style="width:96px;padding:9px 10px;font-size:14px;letter-spacing:2px;text-transform:uppercase;'
-    +'border:1px solid var(--bd2);border-radius:8px;background:var(--surface);color:var(--fg)"></div>';
+  h+='<div style="font-size:13px;font-weight:600;margin-bottom:8px">设备绑定（可选，推荐）</div>';
+  h+='<input id="adm-dev" type="text" placeholder="粘贴对方发来的设备信息，或填 4 位设备码" '
+    +'value="'+esc(S.admDevRaw||'')+'" oninput="admSetDev(this.value)" '
+    +'style="width:100%;padding:9px 10px;font-size:13px;margin-bottom:6px;'
+    +'border:1px solid var(--bd2);border-radius:8px;background:var(--surface);color:var(--fg)">';
+  h+='<div id="adm-dv" style="font-size:12px;margin-bottom:10px;min-height:18px"></div>';
   h+='<div style="font-size:11.5px;color:var(--fg7);margin-bottom:12px;line-height:1.7">'
-    +'留空 = 通用码（12 位，任意设备可用）。<br>'
-    +'填入对方锁屏页显示的 4 位设备码 = <b>设备绑定码</b>（16 位），'
-    +'换设备也激活不了，且不需要联网。</div>';
+    +'留空 = 通用码（12 位，<b>任意设备都能用</b>，管不住转发）。<br>'
+    +'填了设备码 = <b>设备绑定码</b>（16 位），只认那一台，'
+    +'换设备、换浏览器都激活不了，且全程离线不需要联网。</div>';
   h+='<div class="btns" style="margin-bottom:12px"><button class="p" onclick="admGen()">生成</button></div>';
   h+='<div id="adm-out"></div>';
   h+='<div class="note" style="padding:10px 0 0">生成的码<b>直接发给对方即可</b>，不用重新构建或上传页面。'
@@ -757,6 +757,10 @@ function admShowGen(){
   h+='</div>';
   $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'+h+'</div></div>';
   admRenderGen(); admDrawOut();
+}
+function admSetDev(v){
+  S.admDevRaw=v||'';
+  S.admDev=licNorm(v||'').slice(0,4);
 }
 function admGen(){
   var exp=admExpire(S.admVal,S.admUnit);
@@ -910,11 +914,6 @@ function licDeactivate(){
   }
   licInitMenu(); render();
 }
-function licCopyCode(){
-  var o=licGet(); if(!o||!o.code) return;
-  /* 只复制纯授权码本身，不带任何说明文字——否则粘贴到激活框会校验失败 */
-  copySmart(o.code, '已复制授权码 '+o.code, '授权码');
-}
 function licInitMenu(){
   var row=$('side-lic'); if(!row) return;
   if(!LICENSE){ row.style.display='none'; admInitMenu(); return; }
@@ -941,8 +940,9 @@ function renderLock(){
   h+='<div id="lic-msg" class="msg"></div>';
   if(LICENSE){
     h+='<div style="margin-top:14px;font-size:12px;color:#999;line-height:1.7">'
-      +'本机设备码 <b style="color:var(--brand);letter-spacing:1px">'+esc(licDevShow())+'</b><br>'
-      +'管理员可凭它签发<b>只认这台设备</b>的授权码</div>';
+      +'本机设备码 <b style="color:var(--brand);letter-spacing:1px;font-size:14px">'+esc(licDevShow())+'</b><br>'
+      +'<span style="font-size:11.5px">把它发给管理员，即可签发<b>只认这台设备</b>的授权码，'
+      +'换设备也激活不了。</span></div>';
   }
   h+='<div style="margin-top:14px"><button class="p" style="min-width:120px" '
     +'onclick="licActivate()">激活</button></div>';
@@ -2413,8 +2413,9 @@ function licShowInfo(){
   }
   body+='<h4>本机设备码</h4><p style="font-size:15px;letter-spacing:2px"><b style="color:var(--brand)">'
     +esc(licDevShow())+'</b></p>'
-    +'<p style="font-size:12px;color:#888">把它报给管理员，可签发<b>只认这台设备</b>的授权码'
-    +'（换设备也用不了）。换浏览器或清理数据会变，需重新报一次。</p>';
+    +'<p style="font-size:12px;color:#888;margin-top:6px">发给管理员，他就能签发<b>只认这台设备</b>的授权码'
+    +'（16 位，换设备也用不了，且不需要联网）。<br>'
+    +'换浏览器或清理数据会变，需重新发一次。</p>';
   if(o && o.code){
     body+='<h4>本机授权码</h4><p style="font-size:15px;letter-spacing:1px"><b>'+esc(o.code)+'</b></p>'
       +'<p style="font-size:12px;color:#888">已与本机绑定。建议抄下来保存：'
@@ -2426,7 +2427,9 @@ function licShowInfo(){
     body+='<p style="font-size:12px;color:#888">输入管理员提供的授权码后，'
       +'这里会显示与本机绑定的授权码，可长期保存以备恢复。</p>';
   }
-  body+='<h4>说明</h4><p style="font-size:12px">授权码与设备绑定，同一台设备激活一次即可。'
+  body+='<h4>说明</h4><p style="font-size:12px">授权码与设备绑定，同一台设备激活一次即可。<br>'
+    +'<b>12 位通用码</b>：任意设备都能激活，管不住转发。<br>'
+    +'<b>16 位设备绑定码</b>：只认一台设备，换机器激活不了。<br>'
     +'该限制在页面内完成，用于避免链接被随手转发；'
     +'它不具备强加密能力，也无法从后台吊销。</p>';
   $('modal').innerHTML='<div class="mask" onclick="if(event.target===this)closeHelp()"><div class="modal">'
@@ -2594,6 +2597,10 @@ function showHelp(){
    +'<h4>管理员与生成授权码</h4><ul>'
    +'<li>菜单里<b>「管理员」</b>项用账号登录后，菜单会常驻多出一项<b>「生成授权码」</b>——'
    +'关掉弹窗也还在，随时能打开签发，不用重新登录。</li>'
+   +'<li><b>设备绑定码</b>：在生成面板填入对方的 4 位设备码，生成 16 位绑定码，'
+   +'只认那一台设备，换机器激活不了，全程离线不需联网。</li>'
+   +'<li><b>通用码</b>（12 位，不填设备码）：任意设备都能激活。适合自己多台设备用，'
+   +'但管不住被转发——要一码一机请务必用绑定码。</li>'
    +'<li>签发时可按<b>天 / 周 / 月 / 年</b>设置有效期，一次生成 1~20 个，'
    +'到期日实时预览，生成后可单个复制、复制全部或下载成名单。</li>'
    +'<li>管理员本人<b>免激活</b>，所以菜单里不再显示「访问授权」；退出登录后本机授权一并失效。</li>'

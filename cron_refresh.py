@@ -39,7 +39,11 @@ sys.path.insert(0, BASE)
 STATIC = os.path.join(BASE, "dist", "static_site")
 SINGLE = os.path.join(BASE, "dist", "单文件版")
 META_KEYS = ("name", "redMax", "blueMax", "redCount", "blueCount",
-             "redLabel", "blueLabel", "source")
+             "redLabel", "blueLabel", "source",
+             # 福彩3D / 排列三：按位玩法标记与位名，缺了前端会按双色球渲染
+             "positional", "posLabels", "minNum",
+             # 奖池 / 销量 / 浮动奖实际奖金 / 福运奖
+             "pool")
 
 # 开奖日（Python weekday: 周一=0 ... 周日=6），已用历史数据反推验证
 DRAW_DAYS = {
@@ -157,6 +161,13 @@ def fetch_one(lot, crawler, poll_minutes=0, interval=90):
         return None
 
     body = strip(data)
+    # 期号倒退保护：抓到的比仓库里还旧，说明接口异常或解析出错，
+    # 绝不能拿它覆盖好数据。
+    if base and body["rows"] and \
+            (len(body["rows"][-1][0]), body["rows"][-1][0]) < (len(base), base):
+        log("%s: ⚠ 抓到的最新期号 %s 比仓库已有 %s 还旧，判定异常，放弃本次更新"
+            % (lot, body["rows"][-1][0], base))
+        return None
     body["source"] = src
     body["count"] = len(body["rows"])
     body["updatedAt"] = int(time.time())
